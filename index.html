@@ -2,37 +2,232 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
   <title>Cryptid Pack Ripper</title>
   <meta name="theme-color" content="#0b0b0b"/>
 
   <style>
     :root{
-      --bg:#0b0b0b; --panel:#101012; --panel2:#141414; --stroke:#2a2a2a;
-      --txt:#ffffff; --muted:#9ca3af; --accent:#7c3aed;
+      --bg:#0b0b0b;
+      --panel:#101012;
+      --panel2:#141414;
+      --stroke:#2a2a2a;
+      --txt:#ffffff;
+      --muted:#9ca3af;
+      --accent:#7c3aed;
+      --ok:#22c55e;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:var(--bg);color:var(--txt)}
-    .wrap{padding:16px;max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
-
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:var(--bg);
+      color:var(--txt);
+    }
+    .wrap{
+      padding:16px;
+      padding-bottom:28px;
+      max-width:820px;
+      margin:0 auto;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
     textarea,input{
-      width:100%; background:var(--panel2); color:var(--txt);
-      border:1px solid var(--stroke); border-radius:14px; padding:12px; outline:none;
+      width:100%;
+      background:var(--panel2);
+      color:var(--txt);
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      padding:12px;
+      outline:none;
     }
-    textarea{min-height:170px; resize:vertical}
+    textarea{min-height:150px; resize:vertical}
     button{
-      background:var(--accent); color:#fff; border:0; border-radius:14px;
-      padding:12px 14px; font-weight:900;
+      background:var(--accent);
+      color:#fff;
+      border:0;
+      border-radius:14px;
+      padding:12px 14px;
+      font-weight:900;
+      letter-spacing:.2px;
     }
-    button:disabled{background:#2a2a2a}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .row button{flex:1;min-width:140px}
+    button:disabled{
+      background:#2a2a2a;
+      color:#9aa0a6;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .row button{flex:1; min-width:140px}
+    .hint{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.35;
+    }
+    .pill{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      background:#1f1f22;
+      border:1px solid var(--stroke);
+      font-size:12px;
+      color:#d1d5db;
+      white-space:nowrap;
+    }
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .small{font-size:12px;color:#cbd5e1}
 
-    .hint{color:var(--muted);font-size:12px;line-height:1.35}
-    .card{
+    /* --- Pack + Card stage --- */
+    .stage{
+      position:relative;
+      border:1px solid var(--stroke);
+      border-radius:18px;
       background:
-        radial-gradient(1200px 500px at 10% 0%, rgba(124,58,237,.25), transparent),
-        radial-gradient(900px 500px at 100% 40%, rgba(16,185,129,.14), transparent),
+        radial-gradient(1200px 520px at 10% 0%, rgba(124,58,237,.18), transparent),
+        radial-gradient(900px 520px at 100% 40%, rgba(16,185,129,.12), transparent),
+        #0f0f10;
+      padding:14px;
+      overflow:hidden;
+      min-height:340px;
+    }
+    .stageTop{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:10px;
+      gap:10px;
+    }
+    .tapHint{
+      opacity:.85;
+      font-size:12px;
+      color:#cbd5e1;
+      font-family:ui-monospace, Menlo, monospace;
+    }
+
+    .packWrap{
+      position:relative;
+      height:260px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .pack{
+      width:min(520px, 100%);
+      height:230px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:
+        radial-gradient(900px 320px at 15% 0%, rgba(124,58,237,.30), transparent),
+        radial-gradient(700px 300px at 100% 60%, rgba(16,185,129,.18), transparent),
+        linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02)),
+        rgba(0,0,0,0.35);
+      box-shadow: 0 18px 45px rgba(0,0,0,0.55);
+      position:absolute;
+      inset:auto;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      padding:16px;
+      transform:translateY(0) rotate(0deg) scale(1);
+      opacity:1;
+      transition:transform .48s cubic-bezier(.2,.8,.2,1), opacity .48s ease;
+      cursor:pointer;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pack:active{transform:translateY(2px) scale(0.995)}
+    .packHeader{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+    }
+    .packTitle{
+      font-weight:1000;
+      letter-spacing:.5px;
+      font-size:18px;
+    }
+    .packSub{
+      margin-top:4px;
+      color:#cbd5e1;
+      font-size:12px;
+      opacity:.85;
+    }
+    .packPanel{
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(0,0,0,0.30);
+      padding:14px;
+      min-height:92px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      gap:6px;
+    }
+    .packPanel b{font-size:14px}
+    .packPanel span{font-size:12px;color:#cbd5e1;opacity:.9}
+
+    .ripLine{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      opacity:0;
+      transition:opacity .25s ease;
+    }
+    .ripLine::before{
+      content:"";
+      position:absolute;
+      left:12%;
+      top:50%;
+      width:76%;
+      height:3px;
+      background:linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+      transform:rotate(-10deg);
+      filter:blur(.2px);
+    }
+
+    /* Card reveal layer */
+    .revealCard{
+      position:absolute;
+      width:min(560px, 100%);
+      aspect-ratio: 800/1120;
+      max-height:360px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,0.10);
+      overflow:hidden;
+      opacity:0;
+      transform:translateY(28px) scale(.96);
+      transition:opacity .55s ease, transform .55s cubic-bezier(.2,.8,.2,1);
+      box-shadow: 0 22px 60px rgba(0,0,0,0.62);
+      background:rgba(0,0,0,0.25);
+    }
+    .revealCard img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    /* animation states */
+    .stage.ripping .ripLine{opacity:1}
+    .stage.ripped .pack{
+      transform:translateX(80vw) translateY(-40px) rotate(14deg) scale(.92);
+      opacity:0;
+    }
+    .stage.ripped .revealCard{
+      opacity:1;
+      transform:translateY(0) scale(1);
+    }
+
+    /* Card text panel (below stage) */
+    .cardText{
+      background:
+        radial-gradient(1200px 500px at 10% 0%, rgba(124,58,237,.18), transparent),
+        radial-gradient(900px 500px at 100% 40%, rgba(16,185,129,.10), transparent),
         #0f0f10;
       border:1px solid var(--stroke);
       border-radius:18px;
@@ -40,78 +235,69 @@
       white-space:pre-wrap;
       line-height:1.35;
     }
-    .saved{background:var(--panel);border:1px solid var(--stroke);border-radius:14px;padding:12px;white-space:pre-wrap}
-    .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#1f1f22;border:1px solid var(--stroke);font-size:12px;color:#d1d5db}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-    .small{font-size:12px;color:#cbd5e1}
 
-    /* ===== Pack → Card reveal stage ===== */
-    .stage{
-      position:relative;
-      border:1px solid var(--stroke);
-      border-radius:18px;
-      background:#0f0f10;
-      overflow:hidden;
-      padding:14px;
-    }
-    .stageTitle{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .media{
-      width:100%;
-      border-radius:16px;
-      border:1px solid var(--stroke);
-      background:#0b0b0b;
-      display:block;
-    }
-    .packLayer, .cardLayer{
-      position:relative;
-      width:100%;
-    }
-    .packImg, .cardImg{
-      width:100%;
-      border-radius:16px;
-      border:1px solid var(--stroke);
-      display:block;
-    }
-    .cardImg{ display:none; transform:translateY(30px) scale(.96); opacity:0; }
-    .packImg{ transform:translateY(0); opacity:1; }
-
-    .stage.ripping .packImg{
-      animation:packExit .55s cubic-bezier(.2,.9,.2,1) forwards;
-    }
-    .stage.ripping .cardImg{
-      display:block;
-      animation:cardPop .62s cubic-bezier(.2,.95,.2,1) .12s forwards;
-    }
-    @keyframes packExit{
-      0%{transform:translateY(0) scale(1); opacity:1; filter:saturate(1)}
-      100%{transform:translateY(140px) scale(.92); opacity:0; filter:saturate(1.2)}
-    }
-    @keyframes cardPop{
-      0%{transform:translateY(40px) scale(.94); opacity:0}
-      65%{transform:translateY(-10px) scale(1.01); opacity:1}
-      100%{transform:translateY(0) scale(1); opacity:1}
-    }
-
-    .divider{height:1px;background:#1f1f22;margin:6px 0}
-    .about{
+    /* Collection */
+    .saved{
       background:var(--panel);
       border:1px solid var(--stroke);
+      border-radius:14px;
+      padding:12px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:10px;
+    }
+    @media (min-width:700px){
+      .grid{grid-template-columns:repeat(3, minmax(0,1fr));}
+    }
+    .tile{
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(0,0,0,0.25);
+      border-radius:14px;
+      overflow:hidden;
+    }
+    .tile img{width:100%; height:auto; display:block}
+    .tileMeta{
+      padding:10px;
+      font-size:12px;
+      color:#d1d5db;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .tileMeta b{font-size:12px;color:#fff}
+    .tileMeta .mono{font-size:11px;color:#9ca3af}
+
+    /* Small modal */
+    .modalBack{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,0.62);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:99;
+    }
+    .modal{
+      width:min(520px, 100%);
+      background:#0f0f10;
+      border:1px solid rgba(255,255,255,0.10);
       border-radius:18px;
       padding:14px;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.7);
     }
+    .modal h3{margin:0 0 8px 0; font-size:16px}
+    .modal p{margin:0; color:#cbd5e1; font-size:13px; line-height:1.35}
+    .modal .row{margin-top:12px}
+    .linkBtn{background:#1f2937}
   </style>
 </head>
 
 <body>
   <div class="wrap">
     <div style="font-weight:1000;font-size:18px">Cryptid Pack Ripper</div>
-    <div class="hint">Paste notes → rip a pack → card pops out → share PNG. 10 rips/day. Weekly chase changes.</div>
+    <div class="hint">Paste notes → rip a pack → reveal a collectible card PNG → save/share. 10 tokens/day. Weekly chase changes.</div>
 
     <textarea id="input" placeholder="Paste notes / chaos here…"></textarea>
     <input id="location" placeholder="Optional habitat (e.g., Group chat / My job / Library dusk zone)"/>
@@ -124,64 +310,90 @@
 
     <div id="status" class="hint"></div>
 
-    <!-- ✅ CARD ABOVE EVERYTHING “ABOUT ME” -->
+    <!-- PACK + CARD STAGE (card appears above all text) -->
     <div id="stage" class="stage">
-      <div class="stageTitle">
-        <div class="pill mono" id="stagePill">SEALED PACK</div>
-        <div class="hint mono" id="stageHint">Tap Rip Pack</div>
+      <div class="stageTop">
+        <div class="pill mono" id="packLabel">SEALED PACK</div>
+        <div class="tapHint" id="tapHint">Tap pack or Rip Pack</div>
       </div>
 
-      <div class="packLayer">
-        <img id="packImg" class="packImg media" alt="Pack"/>
-      </div>
+      <div class="packWrap">
+        <div id="ripLine" class="ripLine"></div>
 
-      <div style="height:10px"></div>
+        <div id="pack" class="pack" role="button" aria-label="Sealed pack">
+          <div class="packHeader">
+            <div>
+              <div class="packTitle">CRYPTID PACK</div>
+              <div class="packSub">FIELD GUIDE • UNVERIFIED</div>
+            </div>
+            <div class="pill mono" id="packBadge">READY</div>
+          </div>
+          <div class="packPanel">
+            <b id="packPanelTitle">READY TO RIP</b>
+            <span id="packPanelSub">Rip to reveal.</span>
+          </div>
+        </div>
 
-      <div class="cardLayer">
-        <img id="cardImg" class="cardImg media" alt="Card image"/>
-      </div>
-
-      <div class="divider"></div>
-
-      <div id="cardWrap" class="card">
-        <div class="pill mono">NO CARD YET</div>
-        <div style="margin-top:10px" class="small">Rip a pack to pull a card.</div>
+        <div id="revealCard" class="revealCard" aria-hidden="true">
+          <img id="revealImg" alt="Revealed card"/>
+        </div>
       </div>
     </div>
+
+    <!-- Card text preview -->
+    <div id="cardWrap" class="cardText">
+      <div class="pill mono">NO CARD YET</div>
+      <div style="margin-top:10px" class="small">Rip a pack to pull a card.</div>
+    </div>
+
+    <!-- Visible PNG preview (secondary) -->
+    <img id="cardImg" alt="Card image"
+         style="width:100%;border-radius:18px;border:1px solid #2a2a2a;display:none"/>
 
     <div class="row">
       <button id="save" type="button">Save to Collection</button>
       <button id="show" type="button">Show Collection</button>
-      <button id="bonus" type="button">+3 Bonus Rips (demo)</button>
+      <button id="bonus" type="button">+3 Bonus Tokens (demo)</button>
     </div>
-    <div id="saved" class="saved">No cards saved yet.</div>
+
+    <div id="saved" class="saved">
+      <div class="hint">No cards saved yet.</div>
+    </div>
 
     <canvas id="cardCanvas" width="800" height="1120" style="display:none"></canvas>
 
-    <!-- “About me” / extra text goes BELOW the card now -->
-    <div class="about">
-      <div class="pill mono">ABOUT</div>
-      <div class="hint" style="margin-top:8px">
-        Rarities: Common / Uncommon / Rare / Epic / Legendary.<br/>
-        Weekly chase has hidden triggers. Duplicates possible. Local-only.
+    <div class="hint">
+      Rarities: Common / Uncommon / Rare / Epic / Legendary.  
+      Tip: Add to Home Screen for “app” feel.
+    </div>
+  </div>
+
+  <!-- Simple modal for “out of tokens” -->
+  <div id="modalBack" class="modalBack">
+    <div class="modal">
+      <h3>Out of tokens</h3>
+      <p>You used today’s 10 tokens. Come back tomorrow — or hit demo bonus.</p>
+      <div class="row">
+        <button id="modalClose" class="linkBtn" type="button">Close</button>
+        <button id="modalBonus" type="button">+3 Demo Tokens</button>
       </div>
     </div>
   </div>
 
 <script>
+/* =========================
+   CRYPTID PACK RIPPER — SHIP BUILD
+   - Pack rip animation
+   - Toy-ish cryptid art (color + props + archetypes)
+   - Weekly chase logic (discoverable rule)
+   - Tokens/day + disable + modal
+   - Collection w/ thumbnails
+========================= */
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  /* =========================
-     CRYPTID PACK RIPPER v2
-     - pack → card reveal anim
-     - card always visible
-     - colorful archetype monsters
-     - weekly chase rules (hidden)
-  ========================= */
-
   // ---------- Config ----------
-  const BASE_RIPS_PER_DAY = 10;
+  const BASE_TOKENS_PER_DAY = 10;
   const SET_NAME = "CRYPTID FIELD GUIDE";
   const SET_CODE = "CF-01";
 
@@ -193,30 +405,26 @@
     { name:"Legendary", w:0.3, glow:"#f59e0b" },
   ];
 
-  // “Toy-line” name parts (still office-brainrot flavored, but more creature-y)
-  const speciesA = ["Budget","Calendar","Feedback","Scope","Roadmap","Sync","Stakeholder","Deadline","Pipeline","Alignment","Compliance","Velocity","Deliverable","Metrics","Hiring","Policy","Retro","Standup","Incident","Quarterly","OKR","Vibe","Lore","Ping","Thread","Agenda","Lamp","Bee","Brain","Ghost","Moss","Neon","Gummy","Magma","Glitch"];
-  const speciesB = ["Wraith","Moth","Golem","Hydra","Gremlin","Banshee","Specter","Slime","Worm","Chimera","Warden","Husk","Sprite","Beast","Mirror","Fang","Oracle","Parasite","Orb","Rook","Howler","Blink","Stitch","BeeKnight","LampShade","BrainTank","GhostDad","MossWizard","NeonCrab","GummyOgre"];
-
+  const speciesA = ["Budget","Calendar","Feedback","Scope","Roadmap","Sync","Stakeholder","Deadline","Pipeline","Alignment","Compliance","Velocity","Deliverable","Metrics","Hiring","Policy","Retro","Standup","Incident","Quarterly","OKR","Vibe","Lore","Ping","Thread","Agenda","Token","Meme","Beacon","Waffle"];
+  const speciesB = ["Wraith","Moth","Golem","Hydra","Gremlin","Banshee","Specter","Slime","Worm","Chimera","Cryptid","Warden","Husk","Poltergeist","Sprite","Beast","Mirror","Fang","Oracle","Parasite","Orb","Rook","Howler","Blink","Stitch","Bee","Brain","Lamp"];
   const habitats = ["Open-plan tundra","Zoom marshlands","Email catacombs","Slack swamp","Calendar labyrinth","Spreadsheet canyon","Conference-room terrarium","Group-chat sinkhole","Dorm hallway","Kitchen at 2am","Library dusk zone","Parking lot limbo","Subway fever dream","Basement server shrine"];
 
   const traits = [
-    "Collects shiny keywords. Trades them for snacks.",
-    "Laughs in spreadsheet formulas. Not malicious. Just loud.",
-    "Haunts the third sentence. Leaves glitter.",
-    "Becomes braver when you add emojis.",
-    "Territorial about lamps. Will duel for a lampshade.",
-    "Befriends bees. Commands them politely.",
-    "Thinks in brainwaves. Smells like static.",
-    "Refuses to blink. Still somehow cute.",
-    "Speaks in tiny legal disclaimers.",
-    "Weakness: being named clearly, out loud."
+    "Feeds on vague verbs and unowned tasks.",
+    "Becomes visible only when someone says “quick question.”",
+    "Sheds context every 3 minutes.",
+    "Multiplies when you add more stakeholders.",
+    "Hates clear deadlines; thrives on ‘sometime next week.’",
+    "Migrates toward unmuted microphones.",
+    "Carries a cursed link nobody can open.",
+    "Steals meaning from bullet points.",
+    "Leaves behind a sticky note smell of panic.",
+    "Heals when you over-explain; weakens when you name the decision."
   ];
-
   const moves = [
     "Context Drain","Scope Bloom","Deadline Mirage","Stakeholder Spawn",
     "Vibe Shift","Thread Collapse","Calendar Snare","Meeting Fog",
-    "Action Item Bite","Link Curse","Feedback Loop","Silent Panic",
-    "Bee Swarm","Lamp Bonk","Brain Beam","Ghost Slide"
+    "Action Item Bite","Link Curse","Feedback Loop","Silent Panic"
   ];
 
   // ---------- Utilities ----------
@@ -274,47 +482,52 @@
       pick -= RARITIES[i].w;
       if (pick <= 0){ idx = i; break; }
     }
-    // Boost means “bump one tier up” (never down)
     if (weeklyBoost) idx = clamp(idx+1, 0, RARITIES.length-1);
     return RARITIES[idx];
   }
 
-  // ---------- Daily rip limiter ----------
-  function getRipState(){
-    const date = localStorage.getItem("rips_date") || "";
-    const used = parseInt(localStorage.getItem("rips_used") || "0", 10);
-    const bonus = parseInt(localStorage.getItem("rips_bonus") || "0", 10);
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, (m) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  // ---------- Tokens/day ----------
+  function getTokenState(){
+    const date = localStorage.getItem("tok_date") || "";
+    const used = parseInt(localStorage.getItem("tok_used") || "0", 10);
+    const bonus = parseInt(localStorage.getItem("tok_bonus") || "0", 10);
     return { date, used: isNaN(used)?0:used, bonus: isNaN(bonus)?0:bonus };
   }
-  function setRipState(s){
-    localStorage.setItem("rips_date", s.date);
-    localStorage.setItem("rips_used", String(s.used));
-    localStorage.setItem("rips_bonus", String(s.bonus));
+  function setTokenState(s){
+    localStorage.setItem("tok_date", s.date);
+    localStorage.setItem("tok_used", String(s.used));
+    localStorage.setItem("tok_bonus", String(s.bonus));
   }
   function ensureToday(){
     const t = todayKey();
-    const s = getRipState();
+    const s = getTokenState();
     if (s.date !== t){
-      setRipState({ date:t, used:0, bonus:s.bonus });
+      setTokenState({ date:t, used:0, bonus:s.bonus });
     }
   }
-  function remainingRips(){
+  function remainingTokens(){
     ensureToday();
-    const s = getRipState();
-    const cap = BASE_RIPS_PER_DAY + s.bonus;
+    const s = getTokenState();
+    const cap = BASE_TOKENS_PER_DAY + s.bonus;
     return { left: Math.max(0, cap - s.used), cap, used:s.used, bonus:s.bonus };
   }
-  function consumeRip(){
+  function consumeToken(){
     ensureToday();
-    const s = getRipState();
-    const cap = BASE_RIPS_PER_DAY + s.bonus;
+    const s = getTokenState();
+    const cap = BASE_TOKENS_PER_DAY + s.bonus;
     if (s.used >= cap) return false;
     s.used += 1;
-    setRipState(s);
+    setTokenState(s);
     return true;
   }
 
-  // Per-rip nonce (so repeated taps vary)
+  // Nonce so repeated pulls differ even for same text
   function getRipNonce(){
     const n = parseInt(localStorage.getItem("rip_nonce") || "0", 10);
     return isNaN(n) ? 0 : n;
@@ -333,59 +546,86 @@
   function saveCollection(items){
     localStorage.setItem("collection", JSON.stringify(items));
   }
-  function addToCollection(card){
+  function addToCollection(card, pngDataUrl){
     const items = loadCollection();
     const i = items.findIndex(x => x.cardId === card.cardId);
-    if (i >= 0) items[i].count = (items[i].count || 1) + 1;
-    else items.unshift({ ...card, count: 1 });
+    if (i >= 0) {
+      items[i].count = (items[i].count || 1) + 1;
+      items[i].img = items[i].img || pngDataUrl;
+    } else {
+      items.unshift({ ...card, img: pngDataUrl, count: 1 });
+    }
     saveCollection(items.slice(0,200));
   }
 
-  // ---------- Weekly chase logic (hidden, but consistent) ----------
-  function computeWeeklyChase(text, wk){
-    // Players can “figure it out” because it’s deterministic per week, not random.
-    // It’s not just a word: it includes a positional rule + a pattern rule.
-    const weekSeed = hashStr(wk + "|CHASE");
-    const rr = rng(weekSeed);
-
-    // Rule A: secret token (classic)
-    const secretToken = (speciesA[Math.floor(rr()*speciesA.length)]).toLowerCase();
-
-    // Rule B: position rule (word index + starting letter)
-    const posIndex = 2 + Math.floor(rr()*6); // 2..7 (3rd to 8th word)
-    const letter = "abcdefghijklmnopqrstuvwxyz"[Math.floor(rr()*26)];
-
-    // Rule C: punctuation / structure rule
-    const requireLineBreak = rr() < 0.5;
+  // ---------- Weekly chase logic (discoverable, rotates weekly) ----------
+  // Weekly rule types:
+  // 0: secret word present
+  // 1: two keywords adjacent
+  // 2: Nth word matches a hidden list
+  // 3: sentence count divisible by N
+  // 4: first letters spell a pattern
+  function weeklyBoostFor(text, wk){
+    const seed = hashStr(wk + "|CHASE");
+    const r = rng(seed);
+    const ruleType = Math.floor(r()*5);
 
     const lower = text.toLowerCase();
-    const tokens = lower.replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(Boolean);
+    const words = lower.replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(Boolean);
+    const kw = keywords(text);
 
-    const aHit = lower.includes(secretToken);
+    // hidden pools
+    const poolA = ["banana","danger","danny","oracle","lamp","bee","brain","moth","howler","mirror","thread","lore"];
+    const poolB = ["sync","ping","vibe","scope","policy","retro","incident","agenda","deadline","budget","metrics","token"];
 
-    const posWord = tokens[posIndex] || "";
-    const bHit = posWord.startsWith(letter);
+    if (ruleType === 0){
+      // secret single word (weekly)
+      const secret = (r() < 0.5 ? poolA : poolB)[Math.floor(r()*12)];
+      return words.includes(secret);
+    }
 
-    const cHit = requireLineBreak ? (text.includes("\n")) : (!text.includes("\n"));
+    if (ruleType === 1){
+      // two keywords adjacent (weekly pick)
+      const a = (r() < 0.5 ? poolA : poolB)[Math.floor(r()*12)];
+      const b = (r() < 0.5 ? poolA : poolB)[Math.floor(r()*12)];
+      for (let i=0;i<words.length-1;i++){
+        if (words[i] === a && words[i+1] === b) return true;
+      }
+      return false;
+    }
 
-    // “Chase success” if (A & B) OR (B & C) OR (A & C)
-    const chase = (aHit && bHit) || (bHit && cHit) || (aHit && cHit);
+    if (ruleType === 2){
+      // Nth word matches a hidden pool
+      const n = 3 + Math.floor(r()*7); // 3..9
+      const secret = (r() < 0.5 ? poolA : poolB)[Math.floor(r()*12)];
+      return words[n-1] === secret;
+    }
 
-    return { chase, secretToken, posIndex, letter, requireLineBreak };
+    if (ruleType === 3){
+      // sentence count divisible by N
+      const n = 2 + Math.floor(r()*5); // 2..6
+      const sentences = text.split(/[.!?]\s+/).filter(s=>s.trim().length>0).length;
+      return sentences > 0 && (sentences % n === 0);
+    }
+
+    // ruleType === 4: first letters pattern
+    const patLen = 3 + Math.floor(r()*3); // 3..5
+    const pat = [];
+    for (let i=0;i<patLen;i++){
+      pat.push(String.fromCharCode(97 + Math.floor(r()*26)));
+    }
+    const firsts = kw.slice(0,patLen).map(x=>x[0]).join("");
+    return firsts === pat.join("");
   }
 
   // ---------- Card generation ----------
   function generateCard(text, habitatOverride){
     const wk = weekKeyUTC();
     const k = keywords(text);
-
-    const chase = computeWeeklyChase(text, wk);
-
-    // Seed includes week + text + habitat; chase affects rarity only
     const baseSeed = hashStr(`${wk}|${text}|${habitatOverride||""}`);
     const r = rng(baseSeed);
 
-    const weeklyBoost = chase.chase || ((hashStr(wk + "|" + k.join("|")) % 11) === 0);
+    const weeklyBoost = weeklyBoostFor(text, wk);
 
     const rarity = rollRarity(r, weeklyBoost);
 
@@ -393,12 +633,12 @@
     const habitat = habitatOverride || habitats[Math.floor(r()*habitats.length)];
 
     const tier = RARITIES.findIndex(x=>x.name===rarity.name);
-    const base = 28 + tier*13;
+    const base = 30 + tier*12;
     const kwMod = (hashStr(k.join("|")) % 21) - 10;
     const atk = clamp(base + kwMod + Math.floor(r()*18), 10, 99);
     const def = clamp(base - kwMod + Math.floor(r()*18), 10, 99);
     const wit = clamp(25 + tier*14 + Math.floor(r()*30), 10, 99);
-    const chaos = clamp(18 + tier*16 + (k.length*4) + Math.floor(r()*26), 10, 99);
+    const chaos = clamp(20 + tier*16 + (k.length*4) + Math.floor(r()*26), 10, 99);
 
     const trait1 = traits[Math.floor(r()*traits.length)];
     const trait2 = traits[Math.floor(r()*traits.length)];
@@ -406,24 +646,22 @@
     const move2 = moves[Math.floor(r()*moves.length)];
 
     const excerpt = text.split("\n").map(x=>x.trim()).filter(Boolean).slice(0,3).join(" / ").slice(0,120);
-
-    // Deterministic-ish id per week+pull (nonce lives inside text)
     const cardId = `${SET_CODE}-${wk}-${hashStr(name + "|" + excerpt).toString(16).slice(0,8).toUpperCase()}`;
 
-    // Archetype for art personality
-    const artSeed = hashStr(cardId + "|ART");
-    const archetypes = ["ghost","brain","beeLamp","golem","slime","moth","oracle","neonCrab"];
-    const ar = rng(artSeed);
-    const archetype = archetypes[Math.floor(ar()*archetypes.length)];
+    // Toy archetype influences art (marketable buckets)
+    const archetypes = ["beeLamp","brain","ghost","moth","horn","sticker","crab","oracle"];
+    const arch = archetypes[ hashStr(cardId + "|ARCH") % archetypes.length ];
 
-    // Palette
+    // Palette based on cardId (stable per card)
     const palettes = [
-      ["#7c3aed","#10b981","#38bdf8","#f59e0b"],
-      ["#fb7185","#a78bfa","#22c55e","#60a5fa"],
-      ["#f97316","#fde047","#34d399","#93c5fd"],
-      ["#22c55e","#14b8a6","#e879f9","#f59e0b"],
+      ["#22c55e","#38bdf8","#a78bfa","#f59e0b"],
+      ["#fb7185","#60a5fa","#fbbf24","#34d399"],
+      ["#f97316","#a78bfa","#22c55e","#fde047"],
+      ["#38bdf8","#f59e0b","#fb7185","#c084fc"],
+      ["#a3e635","#22c55e","#0ea5e9","#f472b6"],
+      ["#fca5a5","#fdba74","#fde047","#86efac"]
     ];
-    const palette = palettes[Math.floor(ar()*palettes.length)];
+    const pal = palettes[ hashStr(cardId + "|PAL") % palettes.length ];
 
     return {
       set: SET_NAME, code: SET_CODE, week: wk,
@@ -433,43 +671,12 @@
       trait1, trait2, move1, move2,
       excerpt,
       weeklyBoost,
-      archetype,
-      palette,
-      chaseMeta: chase, // not shown directly; just for pack label
+      arch,
+      pal
     };
   }
 
-  // ---------- Pack image (SVG data URL) ----------
-  function escapeXml(s){
-    return String(s).replace(/[<>&'"]/g, (c)=>({ "<":"&lt;",">":"&gt;","&":"&amp;","'":"&apos;",'"':"&quot;" }[c]));
-  }
-  function packDataURL(label, glow){
-    const svg =
-`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450">
-  <defs>
-    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="${glow}" stop-opacity="0.38"/>
-      <stop offset="1" stop-color="#10b981" stop-opacity="0.18"/>
-    </linearGradient>
-    <filter id="n">
-      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
-      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .22 0"/>
-    </filter>
-  </defs>
-  <rect x="0" y="0" width="800" height="450" fill="#0b0b0b"/>
-  <rect x="30" y="30" width="740" height="390" rx="28" fill="url(#g)" stroke="#2a2a2a" stroke-width="3"/>
-  <rect x="60" y="70" width="680" height="90" rx="18" fill="rgba(0,0,0,0.55)" stroke="#2a2a2a" stroke-width="2"/>
-  <text x="90" y="125" font-family="system-ui, -apple-system" font-size="34" fill="#ffffff" font-weight="900">CRYPTID PACK</text>
-  <text x="90" y="155" font-family="ui-monospace, Menlo" font-size="16" fill="#cbd5e1">FIELD GUIDE • UNVERIFIED</text>
-  <rect x="60" y="190" width="680" height="200" rx="22" fill="rgba(0,0,0,0.55)" stroke="#2a2a2a" stroke-width="2"/>
-  <text x="90" y="255" font-family="system-ui, -apple-system" font-size="26" fill="#e5e7eb" font-weight="900">${escapeXml(label)}</text>
-  <text x="90" y="300" font-family="ui-monospace, Menlo" font-size="16" fill="#9ca3af">Rip to reveal.</text>
-  <rect x="60" y="190" width="680" height="200" rx="22" filter="url(#n)" opacity="0.35"/>
-</svg>`;
-    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-  }
-
-  // ---------- Canvas render ----------
+  // ---------- Canvas render (real trading-card PNG) ----------
   function drawCardPNG(card){
     const c = $("cardCanvas");
     const ctx = c.getContext("2d");
@@ -482,7 +689,7 @@
     const pad = 40;
     const x=pad, y=pad, w=W-pad*2, h=H-pad*2, r=32;
 
-    // Shadow
+    // shadow base
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.55)";
     ctx.shadowBlur = 30;
@@ -492,27 +699,27 @@
     ctx.fill();
     ctx.restore();
 
-    // Rarity glow border
+    // rarity glow border
     roundRect(ctx, x, y, w, h, r);
     ctx.strokeStyle = card.glow;
     ctx.lineWidth = 8;
     ctx.stroke();
 
-    // Inner panel
+    // inner panel gradient
     roundRect(ctx, x+10, y+10, w-20, h-20, r-10);
     const grad = ctx.createLinearGradient(x, y, x+w, y+h);
-    grad.addColorStop(0, "rgba(124,58,237,0.25)");
-    grad.addColorStop(0.55, "rgba(16,185,129,0.16)");
+    grad.addColorStop(0, "rgba(124,58,237,0.22)");
+    grad.addColorStop(0.55, "rgba(16,185,129,0.14)");
     grad.addColorStop(1, "rgba(0,0,0,0.0)");
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // Header strip
+    // header strip
     ctx.fillStyle = "rgba(0,0,0,0.55)";
     roundRect(ctx, x+18, y+18, w-36, 90, 22);
     ctx.fill();
 
-    // Set + ID
+    // set + ID
     ctx.fillStyle = "#e5e7eb";
     ctx.font = "700 22px system-ui, -apple-system";
     ctx.fillText(card.set, x+34, y+54);
@@ -520,7 +727,7 @@
     ctx.fillStyle = "#cbd5e1";
     ctx.fillText(`${card.code}  •  ${card.cardId}`, x+34, y+82);
 
-    // Rarity badge
+    // rarity badge
     const badgeW = 190, badgeH = 44;
     roundRect(ctx, x+w-badgeW-34, y+34, badgeW, badgeH, 16);
     ctx.fillStyle = card.glow;
@@ -531,33 +738,36 @@
     ctx.lineWidth = 3;
     ctx.stroke();
     ctx.fillStyle = "#ffffff";
-    ctx.font = "900 20px system-ui, -apple-system";
+    ctx.font = "800 20px system-ui, -apple-system";
     ctx.fillText(card.rarity.toUpperCase(), x+w-badgeW-20, y+64);
 
-    // Art box
+    // ART box
     const artX = x+28, artY = y+130, artW = w-56, artH = 420;
     roundRect(ctx, artX, artY, artW, artH, 26);
     ctx.fillStyle = "rgba(0,0,0,0.55)";
     ctx.fill();
 
-    // Colorful personality monster
-    drawMonster(ctx, artX, artY, artW, artH, hashStr(card.cardId), card.archetype, card.palette);
+    // draw toy cryptid
+    drawToyCryptid(ctx, artX, artY, artW, artH,
+      hashStr(card.cardId + "|" + card.atk + "|" + card.chaos),
+      card.arch,
+      card.pal
+    );
 
-    // Name + habitat
+    // name + habitat
     ctx.fillStyle = "#fff";
     ctx.font = "900 46px system-ui, -apple-system";
     wrapText(ctx, card.name, x+34, artY+artH+66, w-68, 48, 2);
 
     ctx.fillStyle = "#cbd5e1";
-    ctx.font = "800 20px system-ui, -apple-system";
+    ctx.font = "700 20px system-ui, -apple-system";
     ctx.fillText(`Habitat: ${card.habitat}`, x+34, artY+artH+128);
 
-    // Keywords
     ctx.fillStyle = "#9ca3af";
-    ctx.font = "700 18px ui-monospace, Menlo, monospace";
+    ctx.font = "600 18px ui-monospace, Menlo, monospace";
     ctx.fillText(`Attracted to: ${card.keywords.join(", ") || "unnamed vibes"}`, x+34, artY+artH+162);
 
-    // Stats panel
+    // stats panel
     const stX = x+28, stY = artY+artH+190, stW = w-56, stH = 220;
     roundRect(ctx, stX, stY, stW, stH, 26);
     ctx.fillStyle = "rgba(0,0,0,0.55)";
@@ -568,28 +778,28 @@
     drawStat(ctx, stX+24, stY+140, stW-48, "WIT", card.wit, card.glow);
     drawStat(ctx, stX+24, stY+188, stW-48, "CHAOS", card.chaos, card.glow);
 
-    // Moves + traits
+    // traits + moves
     const tx = x+34, ty = stY+stH+54;
     ctx.fillStyle = "#fff";
-    ctx.font = "900 22px system-ui, -apple-system";
+    ctx.font = "800 22px system-ui, -apple-system";
     ctx.fillText("Observed behaviors", tx, ty);
     ctx.fillStyle = "#d1d5db";
-    ctx.font = "700 18px system-ui, -apple-system";
+    ctx.font = "600 18px system-ui, -apple-system";
     wrapText(ctx, `• ${card.trait1}\n• ${card.trait2}`, tx, ty+30, w-68, 24, 4);
 
     ctx.fillStyle = "#fff";
-    ctx.font = "900 22px system-ui, -apple-system";
+    ctx.font = "800 22px system-ui, -apple-system";
     ctx.fillText("Moves", tx, ty+150);
     ctx.fillStyle = "#d1d5db";
-    ctx.font = "800 18px ui-monospace, Menlo, monospace";
+    ctx.font = "700 18px ui-monospace, Menlo, monospace";
     ctx.fillText(`• ${card.move1}   • ${card.move2}`, tx, ty+180);
 
-    // Footer
+    // footer
     ctx.fillStyle = "#9ca3af";
     ctx.font = "600 16px ui-monospace, Menlo, monospace";
     ctx.fillText(`Week: ${card.week}  •  Generated locally  •  Duplicates possible`, x+34, y+h-28);
 
-    // Foil shimmer for Rare+
+    // foil shimmer Rare+
     const tier = RARITIES.findIndex(x=>x.name===card.rarity);
     if (tier >= 2) addFoil(ctx, x+10, y+10, w-20, h-20, card.glow, tier);
   }
@@ -621,7 +831,9 @@
       if (line) lines.push(line);
     }
     lines = lines.slice(0, maxLines);
-    for (let i=0;i<lines.length;i++) ctx.fillText(lines[i], x, y + i*lineH);
+    for (let i=0;i<lines.length;i++){
+      ctx.fillText(lines[i], x, y + i*lineH);
+    }
   }
 
   function drawStat(ctx, x, y, w, label, val, glow){
@@ -641,261 +853,8 @@
     ctx.globalAlpha = 1;
 
     ctx.fillStyle = "#fff";
-    ctx.font = "900 18px ui-monospace, Menlo, monospace";
+    ctx.font = "800 18px ui-monospace, Menlo, monospace";
     ctx.fillText(String(val).padStart(2,"0"), x+w-42, y);
-  }
-
-  // ====== Personality monsters (colorful archetypes) ======
-  function drawMonster(ctx, x, y, w, h, seed, archetype, palette){
-    const r = rng(seed);
-    const [c1,c2,c3,c4] = palette;
-
-    // background
-    const g = ctx.createLinearGradient(x, y, x+w, y+h);
-    g.addColorStop(0, hexToRgba(c1, 0.22));
-    g.addColorStop(0.55, hexToRgba(c2, 0.18));
-    g.addColorStop(1, "rgba(0,0,0,0.05)");
-    ctx.fillStyle = g;
-    ctx.fillRect(x, y, w, h);
-
-    // sparkles
-    for (let i=0;i<14;i++){
-      ctx.fillStyle = hexToRgba([c1,c2,c3,c4][i%4], 0.20);
-      const sx = x + r()*w, sy = y + r()*h;
-      ctx.beginPath(); ctx.arc(sx, sy, 1 + r()*3, 0, Math.PI*2); ctx.fill();
-    }
-
-    // main character
-    ctx.save();
-    ctx.translate(x + w/2, y + h/2 + 20);
-
-    const bodyW = 170 + r()*120;
-    const bodyH = 150 + r()*140;
-
-    if (archetype === "ghost"){
-      // floaty ghost with scarf + eyes
-      blob(ctx, 0, 0, bodyW, bodyH, r, hexToRgba(c3,0.85));
-      // wavy bottom
-      ctx.fillStyle = "rgba(0,0,0,0.18)";
-      for (let i=-3;i<=3;i++){
-        ctx.beginPath();
-        ctx.arc(i*40, bodyH*0.35, 26 + r()*10, 0, Math.PI*2);
-        ctx.fill();
-      }
-      // eyes
-      eyes(ctx, r, -30, c4);
-      // tiny scarf
-      ctx.strokeStyle = hexToRgba(c1,0.95);
-      ctx.lineWidth = 10;
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      ctx.arc(0, 10, 90, Math.PI*0.15, Math.PI*0.85);
-      ctx.stroke();
-    }
-    else if (archetype === "brain"){
-      // beefy brain guy: big head + little body + lightning
-      blob(ctx, 0, -40, bodyW*1.05, bodyH*0.75, r, hexToRgba(c1,0.88));
-      // brain squiggles
-      ctx.strokeStyle = hexToRgba("#ffffff",0.18);
-      ctx.lineWidth = 5;
-      for (let i=0;i<8;i++){
-        ctx.beginPath();
-        const yy = -70 + i*16;
-        ctx.moveTo(-120, yy);
-        for (let t=-120;t<=120;t+=20){
-          ctx.lineTo(t, yy + Math.sin((t+i*9)*0.06)*10);
-        }
-        ctx.stroke();
-      }
-      // torso
-      blob(ctx, 0, 80, bodyW*0.55, bodyH*0.55, r, hexToRgba(c2,0.85));
-      // eyes
-      eyes(ctx, r, -55, c4);
-      // lightning hands
-      bolt(ctx, -110, 80, c3, r);
-      bolt(ctx,  110, 80, c3, r);
-    }
-    else if (archetype === "beeLamp"){
-      // battle bee with lampshade helmet
-      // body
-      blob(ctx, 0, 20, bodyW*0.85, bodyH*0.55, r, hexToRgba(c4,0.92));
-      // stripes
-      ctx.fillStyle = "rgba(0,0,0,0.25)";
-      for (let i=-2;i<=2;i++){
-        ctx.fillRect(-140 + i*70, 0, 40, 80);
-      }
-      // wings
-      wing(ctx, -150, -20, c2, r);
-      wing(ctx,  150, -20, c2, r);
-      // lampshade
-      ctx.fillStyle = hexToRgba(c1,0.85);
-      trapezoid(ctx, 0, -80, 190, 120, 110);
-      // eyes
-      eyes(ctx, r, 10, "#ffffff");
-      // tiny sword
-      ctx.strokeStyle = hexToRgba(c3,0.95);
-      ctx.lineWidth = 8;
-      ctx.lineCap = "round";
-      ctx.beginPath(); ctx.moveTo(130, 70); ctx.lineTo(220, 10); ctx.stroke();
-    }
-    else if (archetype === "slime"){
-      // goo with bubbles
-      blob(ctx, 0, 50, bodyW*0.95, bodyH*0.75, r, hexToRgba(c2,0.9));
-      for (let i=0;i<10;i++){
-        ctx.fillStyle = "rgba(255,255,255,0.18)";
-        ctx.beginPath();
-        ctx.arc(-120 + r()*240, -20 + r()*180, 6 + r()*16, 0, Math.PI*2);
-        ctx.fill();
-      }
-      eyes(ctx, r, 30, c4);
-    }
-    else if (archetype === "moth"){
-      // moth wizard: wings + antenna + cloak
-      wing(ctx, -170, 10, c1, r);
-      wing(ctx,  170, 10, c1, r);
-      blob(ctx, 0, 40, bodyW*0.45, bodyH*0.65, r, "rgba(0,0,0,0.55)");
-      // antenna
-      ctx.strokeStyle = hexToRgba(c3,0.85);
-      ctx.lineWidth = 6;
-      ctx.beginPath(); ctx.moveTo(-30,-40); ctx.quadraticCurveTo(-80,-110,-110,-130); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo( 30,-40); ctx.quadraticCurveTo( 80,-110, 110,-130); ctx.stroke();
-      eyes(ctx, r, 10, "#ffffff");
-    }
-    else if (archetype === "oracle"){
-      // floating orb + runes
-      ctx.fillStyle = hexToRgba(c1,0.30);
-      ctx.beginPath(); ctx.arc(0, 10, 170, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = hexToRgba(c3,0.90);
-      ctx.beginPath(); ctx.arc(0, 0, 120, 0, Math.PI*2); ctx.fill();
-      // runes
-      ctx.strokeStyle = "rgba(0,0,0,0.25)";
-      ctx.lineWidth = 7;
-      for (let i=0;i<7;i++){
-        ctx.beginPath();
-        ctx.arc(0,0, 35+i*12, r()*Math.PI*2, r()*Math.PI*2);
-        ctx.stroke();
-      }
-      eyes(ctx, r, 0, c4);
-    }
-    else if (archetype === "neonCrab"){
-      // crab body + claws
-      blob(ctx, 0, 40, bodyW*0.8, bodyH*0.45, r, hexToRgba(c3,0.92));
-      claw(ctx, -190, 20, c1, r);
-      claw(ctx,  190, 20, c1, r);
-      // legs
-      ctx.strokeStyle = "rgba(0,0,0,0.25)";
-      ctx.lineWidth = 8;
-      for (let i=-3;i<=3;i++){
-        ctx.beginPath();
-        ctx.moveTo(i*35, 90);
-        ctx.lineTo(i*55, 135);
-        ctx.stroke();
-      }
-      eyes(ctx, r, 20, "#ffffff");
-    }
-    else {
-      // default golem-ish
-      blob(ctx, 0, 30, bodyW, bodyH, r, "rgba(0,0,0,0.78)");
-      eyes(ctx, r, -20, c4);
-    }
-
-    ctx.restore();
-
-    // border
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
-    ctx.lineWidth = 2;
-    roundRect(ctx, x, y, w, h, 26);
-    ctx.stroke();
-  }
-
-  function blob(ctx, cx, cy, w, h, r, fill){
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.fillStyle = fill;
-    ctx.beginPath();
-    const n = 14 + Math.floor(r()*10);
-    for (let i=0;i<=n;i++){
-      const ang = (i/n) * Math.PI * 2;
-      const rx = (w/2) * (0.70 + r()*0.45);
-      const ry = (h/2) * (0.70 + r()*0.45);
-      const px = Math.cos(ang) * rx;
-      const py = Math.sin(ang) * ry;
-      if (i===0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
-
-  function eyes(ctx, r, y, color){
-    ctx.fillStyle = hexToRgba(color, 0.92);
-    const ex = 55 + r()*25;
-    const ey = y + (-10 + r()*20);
-    const er = 10 + r()*10;
-    ctx.beginPath(); ctx.arc(-ex, ey, er, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc( ex, ey, er, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = "rgba(0,0,0,0.35)";
-    ctx.beginPath(); ctx.arc(-ex, ey, er*0.45, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc( ex, ey, er*0.45, 0, Math.PI*2); ctx.fill();
-  }
-
-  function wing(ctx, x, y, color, r){
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.fillStyle = hexToRgba(color, 0.35);
-    ctx.beginPath();
-    ctx.moveTo(0,0);
-    ctx.quadraticCurveTo(-120, -60, -160, 30);
-    ctx.quadraticCurveTo(-70, 120, 10, 70);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
-
-  function trapezoid(ctx, x, y, topW, bottomW, h){
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.beginPath();
-    ctx.moveTo(-topW/2, -h/2);
-    ctx.lineTo(topW/2, -h/2);
-    ctx.lineTo(bottomW/2, h/2);
-    ctx.lineTo(-bottomW/2, h/2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = "rgba(0,0,0,0.25)";
-    ctx.lineWidth = 6;
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function bolt(ctx, x, y, color, r){
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.strokeStyle = hexToRgba(color, 0.9);
-    ctx.lineWidth = 7;
-    ctx.lineJoin = "round";
-    ctx.beginPath();
-    ctx.moveTo(0,0);
-    ctx.lineTo(-25, 35);
-    ctx.lineTo(10, 35);
-    ctx.lineTo(-20, 75);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function claw(ctx, x, y, color, r){
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.fillStyle = hexToRgba(color, 0.85);
-    ctx.beginPath();
-    ctx.arc(0, 0, 55, 0, Math.PI*2);
-    ctx.fill();
-    ctx.fillStyle = "rgba(0,0,0,0.25)";
-    ctx.beginPath();
-    ctx.arc(18, -10, 22, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
   }
 
   function addFoil(ctx, x, y, w, h, glow, tier){
@@ -918,8 +877,7 @@
   }
 
   function hexToRgba(hex, a){
-    const h = String(hex).replace("#","");
-    if (h.length !== 6) return `rgba(255,255,255,${a})`;
+    const h = hex.replace("#","");
     const r = parseInt(h.slice(0,2),16);
     const g = parseInt(h.slice(2,4),16);
     const b = parseInt(h.slice(4,6),16);
@@ -931,26 +889,405 @@
     return await new Promise(resolve => c.toBlob(resolve, "image/png", 0.95));
   }
 
+  // ---------- TOY CRYPTID ART ----------
+  function drawToyCryptid(ctx, x, y, w, h, seed, arch, pal){
+    const r = rng(seed);
+    const [c1,c2,c3,c4] = pal;
+
+    // showroom background
+    const g = ctx.createLinearGradient(x, y, x+w, y+h);
+    g.addColorStop(0, hexToRgba(c1, 0.20));
+    g.addColorStop(0.55, hexToRgba(c2, 0.16));
+    g.addColorStop(1, "rgba(0,0,0,0.10)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, h);
+
+    // soft grid
+    ctx.save();
+    ctx.globalAlpha = 0.10;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1;
+    const step = 38;
+    for (let i=0;i<=w;i+=step){ ctx.beginPath(); ctx.moveTo(x+i,y); ctx.lineTo(x+i,y+h); ctx.stroke(); }
+    for (let j=0;j<=h;j+=step){ ctx.beginPath(); ctx.moveTo(x,y+j); ctx.lineTo(x+w,y+j); ctx.stroke(); }
+    ctx.restore();
+
+    // pedestal shadow
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.beginPath();
+    ctx.ellipse(x+w*0.52, y+h*0.78, w*0.22, h*0.06, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    const cx = x + w*0.52;
+    const cy = y + h*0.55;
+    const tilt = (-0.06 + r()*0.12);
+    const outline = "rgba(0,0,0,0.52)";
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(tilt);
+
+    // toy proportions
+    const headR = 95 + r()*35;
+    const bodyW = 165 + r()*45;
+    const bodyH = 160 + r()*55;
+
+    // body color by archetype
+    const bodyCol =
+      arch === "ghost" ? c3 :
+      arch === "brain" ? c1 :
+      arch === "beeLamp" ? c4 :
+      arch === "moth" ? c2 :
+      arch === "horn" ? c1 :
+      arch === "oracle" ? c3 :
+      arch === "crab" ? c4 :
+      arch === "sticker" ? c2 : c2;
+
+    // body + head (capsules/circles)
+    toyCapsule(ctx, 0, 120, bodyW*0.75, bodyH*0.38, bodyCol, outline);
+    toyCapsule(ctx, 0, 55, bodyW, bodyH, bodyCol, outline);
+    toyCircle(ctx, 0, -75, headR, bodyCol, outline);
+
+    // face mood
+    const moods = ["smug","feral","sleepy","wide","judging","joy"];
+    const mood = moods[Math.floor(r()*moods.length)];
+    drawToyFace(ctx, 0, -85, headR, mood, c4, outline);
+
+    // hands
+    const handY = 65;
+    toyCircle(ctx, -bodyW*0.62, handY, 22 + r()*10, bodyCol, outline);
+    toyCircle(ctx,  bodyW*0.62, handY, 22 + r()*10, bodyCol, outline);
+
+    // accessories
+    if (arch === "beeLamp"){
+      drawLampHelmet(ctx, 0, -140, headR*1.15, c1, outline);
+      drawStripes(ctx, 0, 60, bodyW*0.90, bodyH*0.40, "rgba(0,0,0,0.22)");
+      drawTinySword(ctx, bodyW*0.72, handY, c3, outline);
+      drawBeeWings(ctx, 0, 40, c2);
+    } else if (arch === "brain"){
+      drawBrainGrooves(ctx, 0, -75, headR, "rgba(255,255,255,0.10)");
+      drawLightningWand(ctx, -bodyW*0.80, handY, c3, outline);
+    } else if (arch === "ghost"){
+      drawScarf(ctx, 0, -15, c1, outline);
+      drawAura(ctx, 0, -10, headR*1.35, hexToRgba(c3,0.12));
+    } else if (arch === "moth"){
+      drawCape(ctx, 0, 70, bodyW*1.10, c3, outline);
+      drawAntenna(ctx, -35, -155, c2, outline);
+      drawAntenna(ctx,  35, -155, c2, outline);
+      drawSparkStars(ctx, -120, -160, c4);
+      drawSparkStars(ctx,  140, -130, c4);
+    } else if (arch === "oracle"){
+      drawOrbPet(ctx,  bodyW*0.92, -10, 28 + r()*10, c1, outline);
+    } else if (arch === "crab"){
+      drawClaw(ctx, -bodyW*0.95, 60, c1, outline);
+      drawClaw(ctx,  bodyW*0.95, 60, c1, outline);
+      drawNeonEdge(ctx, 0, -75, headR, c4);
+    } else if (arch === "horn"){
+      drawHorns(ctx, 0, -170, headR, c3, outline);
+    } else if (arch === "sticker"){
+      drawSticker(ctx, -bodyW*0.85, -40, "NO THOUGHTS", c1, outline);
+    }
+
+    // plastic shine
+    drawPlasticShine(ctx, 0, -105, headR, "rgba(255,255,255,0.22)");
+    drawPlasticShine(ctx, 0, 55, Math.max(bodyW, bodyH)*0.55, "rgba(255,255,255,0.12)");
+
+    ctx.restore();
+
+    // art frame border
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.lineWidth = 2;
+    roundRect(ctx, x, y, w, h, 26);
+    ctx.stroke();
+  }
+
+  // --- toy helpers ---
+  function toyCircle(ctx, x, y, r, fill, stroke){
+    ctx.fillStyle = hexToRgba(fill, 0.92);
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = stroke; ctx.lineWidth = 10; ctx.stroke();
+  }
+  function toyCapsule(ctx, x, y, w, h, fill, stroke){
+    const rx = w/2, ry = h/2;
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.fillStyle = hexToRgba(fill, 0.92);
+    ctx.beginPath();
+    ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = stroke; ctx.lineWidth = 10; ctx.stroke();
+    ctx.restore();
+  }
+  function drawToyFace(ctx, x, y, headR, mood, accent){
+    const eyeY = y + 10;
+    const eyeX = headR*0.36;
+    const eyeR = headR*0.10;
+    const pupilR = eyeR*0.45;
+
+    // whites
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.beginPath(); ctx.arc(x-eyeX, eyeY, eyeR, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+eyeX, eyeY, eyeR, 0, Math.PI*2); ctx.fill();
+
+    // pupils
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    const pxShift = mood==="judging" ? -pupilR*0.6 : mood==="wide" ? 0 : 0;
+    ctx.beginPath(); ctx.arc(x-eyeX+pxShift, eyeY, pupilR, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+eyeX+pxShift, eyeY, pupilR, 0, Math.PI*2); ctx.fill();
+
+    // brows
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.lineWidth = 8;
+    ctx.lineCap = "round";
+    const brow = mood==="feral" ? -12 : mood==="sleepy" ? 10 : 0;
+    ctx.beginPath(); ctx.moveTo(x-eyeX-18, eyeY-22+brow); ctx.lineTo(x-eyeX+18, eyeY-28+brow); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+eyeX-18, eyeY-28+brow); ctx.lineTo(x+eyeX+18, eyeY-22+brow); ctx.stroke();
+
+    // mouth
+    ctx.strokeStyle = hexToRgba(accent, 0.85);
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    if (mood==="smug"){
+      ctx.arc(x+8, y+65, 28, Math.PI*0.15, Math.PI*0.85);
+    } else if (mood==="feral"){
+      ctx.arc(x, y+70, 34, Math.PI*0.05, Math.PI*0.95);
+      // tiny fangs
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.85)";
+      ctx.lineWidth = 7;
+      ctx.beginPath(); ctx.moveTo(x-10,y+74); ctx.lineTo(x-18,y+88); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x+10,y+74); ctx.lineTo(x+18,y+88); ctx.stroke();
+      return;
+    } else if (mood==="sleepy"){
+      ctx.arc(x, y+78, 22, Math.PI*0.2, Math.PI*0.8);
+    } else if (mood==="wide"){
+      ctx.arc(x, y+70, 30, 0, Math.PI*2);
+    } else if (mood==="judging"){
+      ctx.moveTo(x-30, y+76); ctx.lineTo(x+20, y+70);
+    } else {
+      ctx.arc(x, y+74, 26, Math.PI*0.15, Math.PI*0.85);
+    }
+    ctx.stroke();
+  }
+  function drawPlasticShine(ctx, x, y, r, col){
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    const g = ctx.createRadialGradient(x-r*0.3, y-r*0.5, 10, x-r*0.3, y-r*0.5, r*1.2);
+    g.addColorStop(0, col);
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  function drawStripes(ctx, x, y, w, h, col){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.fillStyle = col;
+    for (let i=-3;i<=3;i++){
+      ctx.beginPath();
+      ctx.roundRect(i*42 - 16, -h/2, 26, h, 10);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  function drawLampHelmet(ctx, x, y, size, fill){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.fillStyle = hexToRgba(fill,0.90);
+    ctx.beginPath();
+    ctx.moveTo(-size*0.55, -10);
+    ctx.lineTo(size*0.55, -10);
+    ctx.lineTo(size*0.40, 90);
+    ctx.lineTo(-size*0.40, 90);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  function drawTinySword(ctx, x, y, fill){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.strokeStyle = hexToRgba(fill,0.95);
+    ctx.lineWidth = 10;
+    ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(85,-55); ctx.stroke();
+    ctx.restore();
+  }
+  function drawBeeWings(ctx, x, y, col){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.fillStyle = hexToRgba(col,0.28);
+    ctx.beginPath(); ctx.ellipse(-130, -40, 70, 45, -0.2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse( 130, -40, 70, 45,  0.2, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  function drawBrainGrooves(ctx, x, y, r, col){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 6;
+    for (let i=-3;i<=3;i++){
+      ctx.beginPath();
+      ctx.arc(i*18, 0, r*0.55, 0.2*Math.PI, 0.8*Math.PI);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawLightningWand(ctx, x, y, col){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.strokeStyle = hexToRgba(col,0.95);
+    ctx.lineWidth = 10;
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(-24, 32);
+    ctx.lineTo(8, 32);
+    ctx.lineTo(-18, 66);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function drawScarf(ctx, x, y, fill){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.strokeStyle = hexToRgba(fill,0.9);
+    ctx.lineWidth = 14;
+    ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(0, 0, 85, Math.PI*0.15, Math.PI*0.85); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(55, 40); ctx.lineTo(85, 95); ctx.stroke();
+    ctx.restore();
+  }
+  function drawAura(ctx, x, y, r, col){
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.ellipse(x,y,r*1.1,r*0.75,0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  function drawCape(ctx, x, y, w, fill){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.fillStyle = hexToRgba(fill,0.35);
+    ctx.beginPath();
+    ctx.moveTo(-w*0.55, -10);
+    ctx.quadraticCurveTo(0, 150, w*0.55, -10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  function drawAntenna(ctx, x, y, fill){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.strokeStyle = hexToRgba(fill,0.9);
+    ctx.lineWidth = 8;
+    ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.quadraticCurveTo(-20,-40,-45,-55); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-55,-60,10,0,Math.PI*2); ctx.fillStyle=hexToRgba(fill,0.9); ctx.fill();
+    ctx.restore();
+  }
+  function drawSparkStars(ctx, x, y, fill){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.fillStyle = hexToRgba(fill,0.35);
+    for (let i=0;i<4;i++){
+      ctx.beginPath();
+      ctx.moveTo(0,-18);
+      ctx.lineTo(6,-6);
+      ctx.lineTo(18,0);
+      ctx.lineTo(6,6);
+      ctx.lineTo(0,18);
+      ctx.lineTo(-6,6);
+      ctx.lineTo(-18,0);
+      ctx.lineTo(-6,-6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.rotate(Math.PI/6);
+    }
+    ctx.restore();
+  }
+  function drawOrbPet(ctx, x, y, r, fill){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.fillStyle = hexToRgba(fill,0.85);
+    ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.45)"; ctx.lineWidth = 8; ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.beginPath(); ctx.arc(-r*0.25,-r*0.25,r*0.18,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  function drawClaw(ctx, x, y, fill){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.fillStyle = hexToRgba(fill,0.85);
+    ctx.beginPath(); ctx.arc(0, 0, 52, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.beginPath(); ctx.arc(18, -10, 18, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  function drawNeonEdge(ctx, x, y, r, col){
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.strokeStyle = hexToRgba(col,0.25);
+    ctx.lineWidth = 22;
+    ctx.beginPath(); ctx.arc(x,y,r*1.02,0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+  }
+  function drawHorns(ctx, x, y, headR, fill){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.fillStyle = hexToRgba(fill,0.85);
+    ctx.beginPath();
+    ctx.moveTo(-headR*0.45, 0);
+    ctx.quadraticCurveTo(-headR*0.75, -60, -headR*0.35, -90);
+    ctx.quadraticCurveTo(-headR*0.15, -60, -headR*0.10, 0);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(headR*0.45, 0);
+    ctx.quadraticCurveTo(headR*0.75, -60, headR*0.35, -90);
+    ctx.quadraticCurveTo(headR*0.15, -60, headR*0.10, 0);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  function drawSticker(ctx, x, y, text, fill){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.fillStyle = hexToRgba(fill,0.55);
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.roundRect(-80,-28,160,56,16);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#fff";
+    ctx.font = "900 16px ui-monospace, Menlo, monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
+  }
+
   // ---------- UI ----------
   let lastCard = null;
 
-  function updateStatus(){
-    const s = remainingRips();
-    const wk = weekKeyUTC();
-    $("status").innerHTML =
-      `Week: <span class="mono">${wk}</span> • Rips: <span class="mono">${s.left}/${s.cap}</span> (used ${s.used}, bonus ${s.bonus})`;
+  function openModal(){
+    $("modalBack").style.display = "flex";
+  }
+  function closeModal(){
+    $("modalBack").style.display = "none";
   }
 
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, (m) => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    }[m]));
+  function updateStatus(){
+    const s = remainingTokens();
+    const wk = weekKeyUTC();
+    $("status").innerHTML =
+      `Week: <span class="mono">${wk}</span> • Tokens: <span class="mono">${s.left}/${s.cap}</span> (used ${s.used}, bonus ${s.bonus})`;
+
+    $("rip").disabled = (s.left <= 0);
+    $("rip").textContent = s.left <= 0 ? "Out of Tokens" : "Rip Pack";
+    $("tapHint").textContent = s.left <= 0 ? "Out of tokens" : "Tap pack or Rip Pack";
   }
 
   function renderCardText(card){
     const boost = card.weeklyBoost ? " (weekly boost!)" : "";
     $("cardWrap").innerHTML =
-      `<div class="pill mono">${card.rarity.toUpperCase()} • ${card.code}</div>
+      `<div class="pill mono">${escapeHtml(card.rarity.toUpperCase())} • ${escapeHtml(card.code)}</div>
        <div style="margin-top:10px;font-weight:1000;font-size:20px">${escapeHtml(card.name)}</div>
        <div class="small">Habitat: <span class="mono">${escapeHtml(card.habitat)}</span></div>
        <div class="small">Card ID: <span class="mono">${escapeHtml(card.cardId)}</span>${boost}</div>
@@ -969,6 +1306,73 @@
        </div>`;
   }
 
+  function resetPackUI(){
+    const stage = $("stage");
+    stage.classList.remove("ripping","ripped");
+    $("packLabel").textContent = "SEALED PACK";
+    $("packBadge").textContent = "READY";
+    $("packPanelTitle").textContent = "READY TO RIP";
+    $("packPanelSub").textContent = "Rip to reveal.";
+    $("revealCard").setAttribute("aria-hidden","true");
+  }
+
+  async function doRip(){
+    const text = $("input").value.trim();
+    const habitat = $("location").value.trim();
+    if (!text) return alert("Paste some notes first.");
+
+    const ok = consumeToken();
+    updateStatus();
+    if (!ok) return openModal();
+
+    // Prep: reset stage so it can animate again
+    resetPackUI();
+
+    // Build card with nonce so repeated rips differ
+    const nonce = bumpRipNonce();
+    const card = generateCard(text + "\n#nonce:" + nonce, habitat);
+    lastCard = card;
+
+    // Render PNG
+    drawCardPNG(card);
+    const dataUrl = $("cardCanvas").toDataURL("image/png");
+
+    // Update stage reveal image
+    $("revealImg").src = dataUrl;
+    $("revealCard").setAttribute("aria-hidden","false");
+
+    // Update preview image below
+    const img = $("cardImg");
+    img.src = dataUrl;
+    img.style.display = "block";
+
+    // Update text panel
+    renderCardText(card);
+
+    // Animate pack rip
+    const stage = $("stage");
+    stage.classList.add("ripping");
+    $("packLabel").textContent = "RIPPING…";
+    $("packPanelTitle").textContent = "TEARING PACK";
+    $("packPanelSub").textContent = "Hold on…";
+
+    // After a beat, fly pack away + show card
+    setTimeout(() => {
+      stage.classList.remove("ripping");
+      stage.classList.add("ripped");
+      $("packLabel").textContent = "PACK OPENED";
+    }, 260);
+
+    // After animation, reset pack back in place (so you can rip again)
+    setTimeout(() => {
+      // Keep the revealed card visible (stage stays ripped),
+      // but restore pack content text for next rip feel:
+      $("packBadge").textContent = "NEW PACK";
+      $("packPanelTitle").textContent = "NEW PACK READY";
+      $("packPanelSub").textContent = "Rip again to pull another.";
+    }, 900);
+  }
+
   async function shareImage(){
     if (!lastCard) return alert("Rip a pack first.");
     const blob = await canvasToBlob();
@@ -983,93 +1387,91 @@
     }
   }
 
-  function setPackUI(label, glow="#7c3aed"){
-    $("packImg").src = packDataURL(label, glow);
-    $("stagePill").textContent = "SEALED PACK";
-    $("stageHint").textContent = "Tap Rip Pack";
+  function renderCollection(){
+    const items = loadCollection();
+    if (!items.length){
+      $("saved").innerHTML = `<div class="hint">No cards saved yet.</div>`;
+      return;
+    }
+    $("saved").innerHTML = `
+      <div class="grid">
+        ${items.slice(0,60).map(x => `
+          <div class="tile">
+            ${x.img ? `<img src="${x.img}" alt="${escapeHtml(x.name)}">` : ``}
+            <div class="tileMeta">
+              <b>${escapeHtml(x.rarity)} — ${escapeHtml(x.name)} <span class="mono">x${x.count||1}</span></b>
+              <div class="mono">${escapeHtml(x.cardId||"")}</div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
   }
 
   function bind(){
+    // init state
     updateStatus();
-    setPackUI("READY TO RIP", "#7c3aed");
+    resetPackUI();
+    renderCollection();
 
-    $("rip").addEventListener("click", async () => {
-      const text = $("input").value.trim();
-      const habitat = $("location").value.trim();
-      if (!text) return alert("Paste some notes first.");
+    // Rip via button
+    $("rip").addEventListener("click", doRip);
 
-      const ok = consumeRip();
-      updateStatus();
-      if (!ok) return alert("Out of rips for today. Come back tomorrow (or use +3 demo).");
+    // Rip via tapping pack
+    $("pack").addEventListener("click", doRip);
 
-      // prep pack
-      const stage = $("stage");
-      stage.classList.remove("ripping");
-      $("cardImg").style.display = "none";
-      setPackUI("OPENING…", "#a78bfa");
-
-      // generate card
-      const nonce = bumpRipNonce();
-      const card = generateCard(text + "\n#nonce:" + nonce, habitat);
-      lastCard = card;
-
-      // draw PNG + update text
-      drawCardPNG(card);
-      renderCardText(card);
-
-      // update stage labels (slight tease, NOT the actual rule)
-      $("stagePill").textContent = card.rarity.toUpperCase();
-      $("stageHint").textContent = "Card popped out.";
-      $("packImg").src = packDataURL("RIPPED!", card.glow);
-
-      // set card image then animate reveal
-      $("cardImg").src = $("cardCanvas").toDataURL("image/png");
-      stage.classList.add("ripping");
-
-      // reset pack after a moment (so you can rip again and see a pack)
-      setTimeout(() => {
-        stage.classList.remove("ripping");
-        $("cardImg").style.display = "block";
-        setPackUI("READY TO RIP", "#7c3aed");
-      }, 900);
-    });
-
+    // Share
     $("share").addEventListener("click", async () => {
       try { await shareImage(); }
       catch { alert("Share failed. Try Copy Card Text."); }
     });
 
+    // Copy
     $("copy").addEventListener("click", async () => {
       try { await navigator.clipboard.writeText($("cardWrap").innerText || ""); alert("Copied."); }
       catch { alert("Copy failed (permission)."); }
     });
 
+    // Save
     $("save").addEventListener("click", () => {
       if (!lastCard) return alert("Rip a pack first.");
-      addToCollection(lastCard);
+      const png = $("cardCanvas").toDataURL("image/png");
+      addToCollection(lastCard, png);
+      renderCollection();
       alert("Saved to collection (on this phone).");
     });
 
-    $("show").addEventListener("click", () => {
-      const items = loadCollection();
-      $("saved").textContent = items.length
-        ? items.slice(0,40).map(x => `• ${x.rarity} — ${x.name}  x${x.count}\n  ${x.cardId}\n`).join("\n")
-        : "No cards saved yet.";
-    });
+    // Show collection
+    $("show").addEventListener("click", renderCollection);
 
+    // Bonus tokens
     $("bonus").addEventListener("click", () => {
       ensureToday();
-      const s = getRipState();
+      const s = getTokenState();
       s.bonus += 3;
-      setRipState(s);
+      setTokenState(s);
       updateStatus();
-      alert("+3 bonus rips added (demo).");
+      alert("+3 demo tokens added.");
+    });
+
+    // Modal
+    $("modalClose").addEventListener("click", closeModal);
+    $("modalBack").addEventListener("click", (e) => {
+      if (e.target === $("modalBack")) closeModal();
+    });
+    $("modalBonus").addEventListener("click", () => {
+      ensureToday();
+      const s = getTokenState();
+      s.bonus += 3;
+      setTokenState(s);
+      updateStatus();
+      closeModal();
+      alert("+3 demo tokens added.");
     });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
   else bind();
-
 })();
 </script>
 </body>
