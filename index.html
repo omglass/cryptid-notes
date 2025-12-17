@@ -48,7 +48,7 @@
 <body>
   <div class="wrap">
     <div style="font-weight:1000;font-size:18px">Cryptid Pack Ripper</div>
-    <div class="hint">Paste notes → rip a card → share the PNG. 10 rips/day. Weekly chase changes.</div>
+    <div class="hint">Paste notes → rip a card → see the PNG → share it. 10 rips/day. Weekly chase changes.</div>
 
     <textarea id="input" placeholder="Paste notes / chaos here…"></textarea>
     <input id="location" placeholder="Optional habitat (e.g., Group chat / My job / Library dusk zone)"/>
@@ -65,6 +65,10 @@
       <div class="pill mono">NO CARD YET</div>
       <div style="margin-top:10px" class="small">Rip a pack to pull a card.</div>
     </div>
+
+    <!-- ✅ PNG PREVIEW (visible) -->
+    <img id="cardImg" alt="Card image"
+         style="width:100%;border-radius:18px;border:1px solid #2a2a2a;display:none"/>
 
     <div class="row">
       <button id="save" type="button">Save to Collection</button>
@@ -83,14 +87,6 @@
   </div>
 
   <script>
-/* =========================
-   CRYPTID PACK RIPPER v1
-   - fixed set frame
-   - weekly chase seed
-   - 10 rips/day (+ bonus)
-   - canvas PNG share
-========================= */
-
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -194,13 +190,11 @@
     const bonus = parseInt(localStorage.getItem("rips_bonus") || "0", 10);
     return { date, used: isNaN(used)?0:used, bonus: isNaN(bonus)?0:bonus };
   }
-
   function setRipState(s){
     localStorage.setItem("rips_date", s.date);
     localStorage.setItem("rips_used", String(s.used));
     localStorage.setItem("rips_bonus", String(s.bonus));
   }
-
   function ensureToday(){
     const t = todayKey();
     const s = getRipState();
@@ -208,14 +202,12 @@
       setRipState({ date:t, used:0, bonus:s.bonus });
     }
   }
-
   function remainingRips(){
     ensureToday();
     const s = getRipState();
     const cap = BASE_RIPS_PER_DAY + s.bonus;
     return { left: Math.max(0, cap - s.used), cap, used:s.used, bonus:s.bonus };
   }
-
   function consumeRip(){
     ensureToday();
     const s = getRipState();
@@ -224,6 +216,17 @@
     s.used += 1;
     setRipState(s);
     return true;
+  }
+
+  // ✅ Per-rip nonce so repeated taps can produce different pulls
+  function getRipNonce(){
+    const n = parseInt(localStorage.getItem("rip_nonce") || "0", 10);
+    return isNaN(n) ? 0 : n;
+  }
+  function bumpRipNonce(){
+    const n = getRipNonce() + 1;
+    localStorage.setItem("rip_nonce", String(n));
+    return n;
   }
 
   // ---------- Collection ----------
@@ -589,11 +592,17 @@
       updateStatus();
       if (!ok) return alert("Out of rips for today. Come back tomorrow (or use +3 demo).");
 
-      const card = generateCard(text, habitat);
+      const nonce = bumpRipNonce();
+      const card = generateCard(text + "\n#nonce:" + nonce, habitat);
       lastCard = card;
 
       drawCardPNG(card);
       renderCardText(card);
+
+      // ✅ show PNG preview
+      const img = $("cardImg");
+      img.src = $("cardCanvas").toDataURL("image/png");
+      img.style.display = "block";
     });
 
     $("share").addEventListener("click", async () => {
