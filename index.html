@@ -14,6 +14,7 @@
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:var(--bg);color:var(--txt)}
     .wrap{padding:16px;max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+
     textarea,input{
       width:100%; background:var(--panel2); color:var(--txt);
       border:1px solid var(--stroke); border-radius:14px; padding:12px; outline:none;
@@ -26,6 +27,7 @@
     button:disabled{background:#2a2a2a}
     .row{display:flex;gap:10px;flex-wrap:wrap}
     .row button{flex:1;min-width:140px}
+
     .hint{color:var(--muted);font-size:12px;line-height:1.35}
     .card{
       background:
@@ -42,13 +44,74 @@
     .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#1f1f22;border:1px solid var(--stroke);font-size:12px;color:#d1d5db}
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
     .small{font-size:12px;color:#cbd5e1}
+
+    /* ===== Pack → Card reveal stage ===== */
+    .stage{
+      position:relative;
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      background:#0f0f10;
+      overflow:hidden;
+      padding:14px;
+    }
+    .stageTitle{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .media{
+      width:100%;
+      border-radius:16px;
+      border:1px solid var(--stroke);
+      background:#0b0b0b;
+      display:block;
+    }
+    .packLayer, .cardLayer{
+      position:relative;
+      width:100%;
+    }
+    .packImg, .cardImg{
+      width:100%;
+      border-radius:16px;
+      border:1px solid var(--stroke);
+      display:block;
+    }
+    .cardImg{ display:none; transform:translateY(30px) scale(.96); opacity:0; }
+    .packImg{ transform:translateY(0); opacity:1; }
+
+    .stage.ripping .packImg{
+      animation:packExit .55s cubic-bezier(.2,.9,.2,1) forwards;
+    }
+    .stage.ripping .cardImg{
+      display:block;
+      animation:cardPop .62s cubic-bezier(.2,.95,.2,1) .12s forwards;
+    }
+    @keyframes packExit{
+      0%{transform:translateY(0) scale(1); opacity:1; filter:saturate(1)}
+      100%{transform:translateY(140px) scale(.92); opacity:0; filter:saturate(1.2)}
+    }
+    @keyframes cardPop{
+      0%{transform:translateY(40px) scale(.94); opacity:0}
+      65%{transform:translateY(-10px) scale(1.01); opacity:1}
+      100%{transform:translateY(0) scale(1); opacity:1}
+    }
+
+    .divider{height:1px;background:#1f1f22;margin:6px 0}
+    .about{
+      background:var(--panel);
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      padding:14px;
+    }
   </style>
 </head>
 
 <body>
   <div class="wrap">
     <div style="font-weight:1000;font-size:18px">Cryptid Pack Ripper</div>
-    <div class="hint">Paste notes → rip a card → see the PNG → share it. 10 rips/day. Weekly chase changes.</div>
+    <div class="hint">Paste notes → rip a pack → card pops out → share PNG. 10 rips/day. Weekly chase changes.</div>
 
     <textarea id="input" placeholder="Paste notes / chaos here…"></textarea>
     <input id="location" placeholder="Optional habitat (e.g., Group chat / My job / Library dusk zone)"/>
@@ -61,14 +124,30 @@
 
     <div id="status" class="hint"></div>
 
-    <div id="cardWrap" class="card">
-      <div class="pill mono">NO CARD YET</div>
-      <div style="margin-top:10px" class="small">Rip a pack to pull a card.</div>
-    </div>
+    <!-- ✅ CARD ABOVE EVERYTHING “ABOUT ME” -->
+    <div id="stage" class="stage">
+      <div class="stageTitle">
+        <div class="pill mono" id="stagePill">SEALED PACK</div>
+        <div class="hint mono" id="stageHint">Tap Rip Pack</div>
+      </div>
 
-    <!-- ✅ PNG PREVIEW (visible) -->
-    <img id="cardImg" alt="Card image"
-         style="width:100%;border-radius:18px;border:1px solid #2a2a2a;display:none"/>
+      <div class="packLayer">
+        <img id="packImg" class="packImg media" alt="Pack"/>
+      </div>
+
+      <div style="height:10px"></div>
+
+      <div class="cardLayer">
+        <img id="cardImg" class="cardImg media" alt="Card image"/>
+      </div>
+
+      <div class="divider"></div>
+
+      <div id="cardWrap" class="card">
+        <div class="pill mono">NO CARD YET</div>
+        <div style="margin-top:10px" class="small">Rip a pack to pull a card.</div>
+      </div>
+    </div>
 
     <div class="row">
       <button id="save" type="button">Save to Collection</button>
@@ -77,18 +156,29 @@
     </div>
     <div id="saved" class="saved">No cards saved yet.</div>
 
-    <!-- Hidden canvas used to render a real trading-card PNG -->
     <canvas id="cardCanvas" width="800" height="1120" style="display:none"></canvas>
 
-    <div class="hint">
-      Rarities: Common / Uncommon / Rare / Epic / Legendary.  
-      Tip: Add to Home Screen for “app” feel.
+    <!-- “About me” / extra text goes BELOW the card now -->
+    <div class="about">
+      <div class="pill mono">ABOUT</div>
+      <div class="hint" style="margin-top:8px">
+        Rarities: Common / Uncommon / Rare / Epic / Legendary.<br/>
+        Weekly chase has hidden triggers. Duplicates possible. Local-only.
+      </div>
     </div>
   </div>
 
-  <script>
+<script>
 (() => {
   const $ = (id) => document.getElementById(id);
+
+  /* =========================
+     CRYPTID PACK RIPPER v2
+     - pack → card reveal anim
+     - card always visible
+     - colorful archetype monsters
+     - weekly chase rules (hidden)
+  ========================= */
 
   // ---------- Config ----------
   const BASE_RIPS_PER_DAY = 10;
@@ -103,25 +193,30 @@
     { name:"Legendary", w:0.3, glow:"#f59e0b" },
   ];
 
-  const speciesA = ["Budget","Calendar","Feedback","Scope","Roadmap","Sync","Stakeholder","Deadline","Pipeline","Alignment","Compliance","Velocity","Deliverable","Metrics","Hiring","Policy","Retro","Standup","Incident","Quarterly","OKR","Vibe","Lore","Ping","Thread","Agenda"];
-  const speciesB = ["Wraith","Moth","Golem","Hydra","Gremlin","Banshee","Specter","Slime","Worm","Chimera","Cryptid","Warden","Husk","Poltergeist","Sprite","Beast","Mirror","Fang","Oracle","Parasite","Orb","Rook","Howler","Blink","Stitch"];
+  // “Toy-line” name parts (still office-brainrot flavored, but more creature-y)
+  const speciesA = ["Budget","Calendar","Feedback","Scope","Roadmap","Sync","Stakeholder","Deadline","Pipeline","Alignment","Compliance","Velocity","Deliverable","Metrics","Hiring","Policy","Retro","Standup","Incident","Quarterly","OKR","Vibe","Lore","Ping","Thread","Agenda","Lamp","Bee","Brain","Ghost","Moss","Neon","Gummy","Magma","Glitch"];
+  const speciesB = ["Wraith","Moth","Golem","Hydra","Gremlin","Banshee","Specter","Slime","Worm","Chimera","Warden","Husk","Sprite","Beast","Mirror","Fang","Oracle","Parasite","Orb","Rook","Howler","Blink","Stitch","BeeKnight","LampShade","BrainTank","GhostDad","MossWizard","NeonCrab","GummyOgre"];
+
   const habitats = ["Open-plan tundra","Zoom marshlands","Email catacombs","Slack swamp","Calendar labyrinth","Spreadsheet canyon","Conference-room terrarium","Group-chat sinkhole","Dorm hallway","Kitchen at 2am","Library dusk zone","Parking lot limbo","Subway fever dream","Basement server shrine"];
+
   const traits = [
-    "Feeds on vague verbs and unowned tasks.",
-    "Becomes visible only when someone says “quick question.”",
-    "Sheds context every 3 minutes.",
-    "Multiplies when you add more stakeholders.",
-    "Hates clear deadlines; thrives on ‘sometime next week.’",
-    "Migrates toward unmuted microphones.",
-    "Carries a cursed link nobody can open.",
-    "Steals meaning from bullet points.",
-    "Leaves behind a sticky note smell of panic.",
-    "Heals when you over-explain; weakens when you name the decision."
+    "Collects shiny keywords. Trades them for snacks.",
+    "Laughs in spreadsheet formulas. Not malicious. Just loud.",
+    "Haunts the third sentence. Leaves glitter.",
+    "Becomes braver when you add emojis.",
+    "Territorial about lamps. Will duel for a lampshade.",
+    "Befriends bees. Commands them politely.",
+    "Thinks in brainwaves. Smells like static.",
+    "Refuses to blink. Still somehow cute.",
+    "Speaks in tiny legal disclaimers.",
+    "Weakness: being named clearly, out loud."
   ];
+
   const moves = [
     "Context Drain","Scope Bloom","Deadline Mirage","Stakeholder Spawn",
     "Vibe Shift","Thread Collapse","Calendar Snare","Meeting Fog",
-    "Action Item Bite","Link Curse","Feedback Loop","Silent Panic"
+    "Action Item Bite","Link Curse","Feedback Loop","Silent Panic",
+    "Bee Swarm","Lamp Bonk","Brain Beam","Ghost Slide"
   ];
 
   // ---------- Utilities ----------
@@ -179,6 +274,7 @@
       pick -= RARITIES[i].w;
       if (pick <= 0){ idx = i; break; }
     }
+    // Boost means “bump one tier up” (never down)
     if (weeklyBoost) idx = clamp(idx+1, 0, RARITIES.length-1);
     return RARITIES[idx];
   }
@@ -218,7 +314,7 @@
     return true;
   }
 
-  // ✅ Per-rip nonce so repeated taps can produce different pulls
+  // Per-rip nonce (so repeated taps vary)
   function getRipNonce(){
     const n = parseInt(localStorage.getItem("rip_nonce") || "0", 10);
     return isNaN(n) ? 0 : n;
@@ -245,23 +341,51 @@
     saveCollection(items.slice(0,200));
   }
 
+  // ---------- Weekly chase logic (hidden, but consistent) ----------
+  function computeWeeklyChase(text, wk){
+    // Players can “figure it out” because it’s deterministic per week, not random.
+    // It’s not just a word: it includes a positional rule + a pattern rule.
+    const weekSeed = hashStr(wk + "|CHASE");
+    const rr = rng(weekSeed);
+
+    // Rule A: secret token (classic)
+    const secretToken = (speciesA[Math.floor(rr()*speciesA.length)]).toLowerCase();
+
+    // Rule B: position rule (word index + starting letter)
+    const posIndex = 2 + Math.floor(rr()*6); // 2..7 (3rd to 8th word)
+    const letter = "abcdefghijklmnopqrstuvwxyz"[Math.floor(rr()*26)];
+
+    // Rule C: punctuation / structure rule
+    const requireLineBreak = rr() < 0.5;
+
+    const lower = text.toLowerCase();
+    const tokens = lower.replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(Boolean);
+
+    const aHit = lower.includes(secretToken);
+
+    const posWord = tokens[posIndex] || "";
+    const bHit = posWord.startsWith(letter);
+
+    const cHit = requireLineBreak ? (text.includes("\n")) : (!text.includes("\n"));
+
+    // “Chase success” if (A & B) OR (B & C) OR (A & C)
+    const chase = (aHit && bHit) || (bHit && cHit) || (aHit && cHit);
+
+    return { chase, secretToken, posIndex, letter, requireLineBreak };
+  }
+
   // ---------- Card generation ----------
   function generateCard(text, habitatOverride){
     const wk = weekKeyUTC();
     const k = keywords(text);
+
+    const chase = computeWeeklyChase(text, wk);
+
+    // Seed includes week + text + habitat; chase affects rarity only
     const baseSeed = hashStr(`${wk}|${text}|${habitatOverride||""}`);
     const r = rng(baseSeed);
 
-    const weekSeed = hashStr(wk + "|SECRET");
-    const rr = rng(weekSeed);
-    const secretA = speciesA[Math.floor(rr()*speciesA.length)].toLowerCase();
-    const secretB = speciesB[Math.floor(rr()*speciesB.length)].toLowerCase();
-    const secretHint = [secretA, secretB];
-
-    const lower = text.toLowerCase();
-    const containsSecret = secretHint.some(s => lower.includes(s));
-    const kwScore = k.reduce((s,w)=> s + (hashStr(wk + "|" + w) % 7), 0);
-    const weeklyBoost = containsSecret || (kwScore % 9 === 0);
+    const weeklyBoost = chase.chase || ((hashStr(wk + "|" + k.join("|")) % 11) === 0);
 
     const rarity = rollRarity(r, weeklyBoost);
 
@@ -269,12 +393,12 @@
     const habitat = habitatOverride || habitats[Math.floor(r()*habitats.length)];
 
     const tier = RARITIES.findIndex(x=>x.name===rarity.name);
-    const base = 30 + tier*12;
+    const base = 28 + tier*13;
     const kwMod = (hashStr(k.join("|")) % 21) - 10;
     const atk = clamp(base + kwMod + Math.floor(r()*18), 10, 99);
     const def = clamp(base - kwMod + Math.floor(r()*18), 10, 99);
     const wit = clamp(25 + tier*14 + Math.floor(r()*30), 10, 99);
-    const chaos = clamp(20 + tier*16 + (k.length*4) + Math.floor(r()*26), 10, 99);
+    const chaos = clamp(18 + tier*16 + (k.length*4) + Math.floor(r()*26), 10, 99);
 
     const trait1 = traits[Math.floor(r()*traits.length)];
     const trait2 = traits[Math.floor(r()*traits.length)];
@@ -282,7 +406,24 @@
     const move2 = moves[Math.floor(r()*moves.length)];
 
     const excerpt = text.split("\n").map(x=>x.trim()).filter(Boolean).slice(0,3).join(" / ").slice(0,120);
+
+    // Deterministic-ish id per week+pull (nonce lives inside text)
     const cardId = `${SET_CODE}-${wk}-${hashStr(name + "|" + excerpt).toString(16).slice(0,8).toUpperCase()}`;
+
+    // Archetype for art personality
+    const artSeed = hashStr(cardId + "|ART");
+    const archetypes = ["ghost","brain","beeLamp","golem","slime","moth","oracle","neonCrab"];
+    const ar = rng(artSeed);
+    const archetype = archetypes[Math.floor(ar()*archetypes.length)];
+
+    // Palette
+    const palettes = [
+      ["#7c3aed","#10b981","#38bdf8","#f59e0b"],
+      ["#fb7185","#a78bfa","#22c55e","#60a5fa"],
+      ["#f97316","#fde047","#34d399","#93c5fd"],
+      ["#22c55e","#14b8a6","#e879f9","#f59e0b"],
+    ];
+    const palette = palettes[Math.floor(ar()*palettes.length)];
 
     return {
       set: SET_NAME, code: SET_CODE, week: wk,
@@ -292,7 +433,40 @@
       trait1, trait2, move1, move2,
       excerpt,
       weeklyBoost,
+      archetype,
+      palette,
+      chaseMeta: chase, // not shown directly; just for pack label
     };
+  }
+
+  // ---------- Pack image (SVG data URL) ----------
+  function escapeXml(s){
+    return String(s).replace(/[<>&'"]/g, (c)=>({ "<":"&lt;",">":"&gt;","&":"&amp;","'":"&apos;",'"':"&quot;" }[c]));
+  }
+  function packDataURL(label, glow){
+    const svg =
+`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="${glow}" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#10b981" stop-opacity="0.18"/>
+    </linearGradient>
+    <filter id="n">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .22 0"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="800" height="450" fill="#0b0b0b"/>
+  <rect x="30" y="30" width="740" height="390" rx="28" fill="url(#g)" stroke="#2a2a2a" stroke-width="3"/>
+  <rect x="60" y="70" width="680" height="90" rx="18" fill="rgba(0,0,0,0.55)" stroke="#2a2a2a" stroke-width="2"/>
+  <text x="90" y="125" font-family="system-ui, -apple-system" font-size="34" fill="#ffffff" font-weight="900">CRYPTID PACK</text>
+  <text x="90" y="155" font-family="ui-monospace, Menlo" font-size="16" fill="#cbd5e1">FIELD GUIDE • UNVERIFIED</text>
+  <rect x="60" y="190" width="680" height="200" rx="22" fill="rgba(0,0,0,0.55)" stroke="#2a2a2a" stroke-width="2"/>
+  <text x="90" y="255" font-family="system-ui, -apple-system" font-size="26" fill="#e5e7eb" font-weight="900">${escapeXml(label)}</text>
+  <text x="90" y="300" font-family="ui-monospace, Menlo" font-size="16" fill="#9ca3af">Rip to reveal.</text>
+  <rect x="60" y="190" width="680" height="200" rx="22" filter="url(#n)" opacity="0.35"/>
+</svg>`;
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
 
   // ---------- Canvas render ----------
@@ -308,6 +482,7 @@
     const pad = 40;
     const x=pad, y=pad, w=W-pad*2, h=H-pad*2, r=32;
 
+    // Shadow
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.55)";
     ctx.shadowBlur = 30;
@@ -317,11 +492,13 @@
     ctx.fill();
     ctx.restore();
 
+    // Rarity glow border
     roundRect(ctx, x, y, w, h, r);
     ctx.strokeStyle = card.glow;
     ctx.lineWidth = 8;
     ctx.stroke();
 
+    // Inner panel
     roundRect(ctx, x+10, y+10, w-20, h-20, r-10);
     const grad = ctx.createLinearGradient(x, y, x+w, y+h);
     grad.addColorStop(0, "rgba(124,58,237,0.25)");
@@ -330,10 +507,12 @@
     ctx.fillStyle = grad;
     ctx.fill();
 
+    // Header strip
     ctx.fillStyle = "rgba(0,0,0,0.55)";
     roundRect(ctx, x+18, y+18, w-36, 90, 22);
     ctx.fill();
 
+    // Set + ID
     ctx.fillStyle = "#e5e7eb";
     ctx.font = "700 22px system-ui, -apple-system";
     ctx.fillText(card.set, x+34, y+54);
@@ -341,6 +520,7 @@
     ctx.fillStyle = "#cbd5e1";
     ctx.fillText(`${card.code}  •  ${card.cardId}`, x+34, y+82);
 
+    // Rarity badge
     const badgeW = 190, badgeH = 44;
     roundRect(ctx, x+w-badgeW-34, y+34, badgeW, badgeH, 16);
     ctx.fillStyle = card.glow;
@@ -351,28 +531,33 @@
     ctx.lineWidth = 3;
     ctx.stroke();
     ctx.fillStyle = "#ffffff";
-    ctx.font = "800 20px system-ui, -apple-system";
+    ctx.font = "900 20px system-ui, -apple-system";
     ctx.fillText(card.rarity.toUpperCase(), x+w-badgeW-20, y+64);
 
+    // Art box
     const artX = x+28, artY = y+130, artW = w-56, artH = 420;
     roundRect(ctx, artX, artY, artW, artH, 26);
     ctx.fillStyle = "rgba(0,0,0,0.55)";
     ctx.fill();
 
-    drawMonster(ctx, artX, artY, artW, artH, hashStr(card.name + "|" + card.week));
+    // Colorful personality monster
+    drawMonster(ctx, artX, artY, artW, artH, hashStr(card.cardId), card.archetype, card.palette);
 
+    // Name + habitat
     ctx.fillStyle = "#fff";
     ctx.font = "900 46px system-ui, -apple-system";
     wrapText(ctx, card.name, x+34, artY+artH+66, w-68, 48, 2);
 
     ctx.fillStyle = "#cbd5e1";
-    ctx.font = "700 20px system-ui, -apple-system";
+    ctx.font = "800 20px system-ui, -apple-system";
     ctx.fillText(`Habitat: ${card.habitat}`, x+34, artY+artH+128);
 
+    // Keywords
     ctx.fillStyle = "#9ca3af";
-    ctx.font = "600 18px ui-monospace, Menlo, monospace";
+    ctx.font = "700 18px ui-monospace, Menlo, monospace";
     ctx.fillText(`Attracted to: ${card.keywords.join(", ") || "unnamed vibes"}`, x+34, artY+artH+162);
 
+    // Stats panel
     const stX = x+28, stY = artY+artH+190, stW = w-56, stH = 220;
     roundRect(ctx, stX, stY, stW, stH, 26);
     ctx.fillStyle = "rgba(0,0,0,0.55)";
@@ -383,25 +568,28 @@
     drawStat(ctx, stX+24, stY+140, stW-48, "WIT", card.wit, card.glow);
     drawStat(ctx, stX+24, stY+188, stW-48, "CHAOS", card.chaos, card.glow);
 
+    // Moves + traits
     const tx = x+34, ty = stY+stH+54;
     ctx.fillStyle = "#fff";
-    ctx.font = "800 22px system-ui, -apple-system";
+    ctx.font = "900 22px system-ui, -apple-system";
     ctx.fillText("Observed behaviors", tx, ty);
     ctx.fillStyle = "#d1d5db";
-    ctx.font = "600 18px system-ui, -apple-system";
+    ctx.font = "700 18px system-ui, -apple-system";
     wrapText(ctx, `• ${card.trait1}\n• ${card.trait2}`, tx, ty+30, w-68, 24, 4);
 
     ctx.fillStyle = "#fff";
-    ctx.font = "800 22px system-ui, -apple-system";
+    ctx.font = "900 22px system-ui, -apple-system";
     ctx.fillText("Moves", tx, ty+150);
     ctx.fillStyle = "#d1d5db";
-    ctx.font = "700 18px ui-monospace, Menlo, monospace";
+    ctx.font = "800 18px ui-monospace, Menlo, monospace";
     ctx.fillText(`• ${card.move1}   • ${card.move2}`, tx, ty+180);
 
+    // Footer
     ctx.fillStyle = "#9ca3af";
     ctx.font = "600 16px ui-monospace, Menlo, monospace";
     ctx.fillText(`Week: ${card.week}  •  Generated locally  •  Duplicates possible`, x+34, y+h-28);
 
+    // Foil shimmer for Rare+
     const tier = RARITIES.findIndex(x=>x.name===card.rarity);
     if (tier >= 2) addFoil(ctx, x+10, y+10, w-20, h-20, card.glow, tier);
   }
@@ -433,9 +621,7 @@
       if (line) lines.push(line);
     }
     lines = lines.slice(0, maxLines);
-    for (let i=0;i<lines.length;i++){
-      ctx.fillText(lines[i], x, y + i*lineH);
-    }
+    for (let i=0;i<lines.length;i++) ctx.fillText(lines[i], x, y + i*lineH);
   }
 
   function drawStat(ctx, x, y, w, label, val, glow){
@@ -455,45 +641,261 @@
     ctx.globalAlpha = 1;
 
     ctx.fillStyle = "#fff";
-    ctx.font = "800 18px ui-monospace, Menlo, monospace";
+    ctx.font = "900 18px ui-monospace, Menlo, monospace";
     ctx.fillText(String(val).padStart(2,"0"), x+w-42, y);
   }
 
-  function drawMonster(ctx, x, y, w, h, seed){
+  // ====== Personality monsters (colorful archetypes) ======
+  function drawMonster(ctx, x, y, w, h, seed, archetype, palette){
     const r = rng(seed);
+    const [c1,c2,c3,c4] = palette;
+
+    // background
     const g = ctx.createLinearGradient(x, y, x+w, y+h);
-    g.addColorStop(0, "rgba(124,58,237,0.20)");
-    g.addColorStop(1, "rgba(16,185,129,0.12)");
+    g.addColorStop(0, hexToRgba(c1, 0.22));
+    g.addColorStop(0.55, hexToRgba(c2, 0.18));
+    g.addColorStop(1, "rgba(0,0,0,0.05)");
     ctx.fillStyle = g;
     ctx.fillRect(x, y, w, h);
 
+    // sparkles
+    for (let i=0;i<14;i++){
+      ctx.fillStyle = hexToRgba([c1,c2,c3,c4][i%4], 0.20);
+      const sx = x + r()*w, sy = y + r()*h;
+      ctx.beginPath(); ctx.arc(sx, sy, 1 + r()*3, 0, Math.PI*2); ctx.fill();
+    }
+
+    // main character
     ctx.save();
     ctx.translate(x + w/2, y + h/2 + 20);
-    ctx.fillStyle = "rgba(0,0,0,0.78)";
+
+    const bodyW = 170 + r()*120;
+    const bodyH = 150 + r()*140;
+
+    if (archetype === "ghost"){
+      // floaty ghost with scarf + eyes
+      blob(ctx, 0, 0, bodyW, bodyH, r, hexToRgba(c3,0.85));
+      // wavy bottom
+      ctx.fillStyle = "rgba(0,0,0,0.18)";
+      for (let i=-3;i<=3;i++){
+        ctx.beginPath();
+        ctx.arc(i*40, bodyH*0.35, 26 + r()*10, 0, Math.PI*2);
+        ctx.fill();
+      }
+      // eyes
+      eyes(ctx, r, -30, c4);
+      // tiny scarf
+      ctx.strokeStyle = hexToRgba(c1,0.95);
+      ctx.lineWidth = 10;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.arc(0, 10, 90, Math.PI*0.15, Math.PI*0.85);
+      ctx.stroke();
+    }
+    else if (archetype === "brain"){
+      // beefy brain guy: big head + little body + lightning
+      blob(ctx, 0, -40, bodyW*1.05, bodyH*0.75, r, hexToRgba(c1,0.88));
+      // brain squiggles
+      ctx.strokeStyle = hexToRgba("#ffffff",0.18);
+      ctx.lineWidth = 5;
+      for (let i=0;i<8;i++){
+        ctx.beginPath();
+        const yy = -70 + i*16;
+        ctx.moveTo(-120, yy);
+        for (let t=-120;t<=120;t+=20){
+          ctx.lineTo(t, yy + Math.sin((t+i*9)*0.06)*10);
+        }
+        ctx.stroke();
+      }
+      // torso
+      blob(ctx, 0, 80, bodyW*0.55, bodyH*0.55, r, hexToRgba(c2,0.85));
+      // eyes
+      eyes(ctx, r, -55, c4);
+      // lightning hands
+      bolt(ctx, -110, 80, c3, r);
+      bolt(ctx,  110, 80, c3, r);
+    }
+    else if (archetype === "beeLamp"){
+      // battle bee with lampshade helmet
+      // body
+      blob(ctx, 0, 20, bodyW*0.85, bodyH*0.55, r, hexToRgba(c4,0.92));
+      // stripes
+      ctx.fillStyle = "rgba(0,0,0,0.25)";
+      for (let i=-2;i<=2;i++){
+        ctx.fillRect(-140 + i*70, 0, 40, 80);
+      }
+      // wings
+      wing(ctx, -150, -20, c2, r);
+      wing(ctx,  150, -20, c2, r);
+      // lampshade
+      ctx.fillStyle = hexToRgba(c1,0.85);
+      trapezoid(ctx, 0, -80, 190, 120, 110);
+      // eyes
+      eyes(ctx, r, 10, "#ffffff");
+      // tiny sword
+      ctx.strokeStyle = hexToRgba(c3,0.95);
+      ctx.lineWidth = 8;
+      ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(130, 70); ctx.lineTo(220, 10); ctx.stroke();
+    }
+    else if (archetype === "slime"){
+      // goo with bubbles
+      blob(ctx, 0, 50, bodyW*0.95, bodyH*0.75, r, hexToRgba(c2,0.9));
+      for (let i=0;i<10;i++){
+        ctx.fillStyle = "rgba(255,255,255,0.18)";
+        ctx.beginPath();
+        ctx.arc(-120 + r()*240, -20 + r()*180, 6 + r()*16, 0, Math.PI*2);
+        ctx.fill();
+      }
+      eyes(ctx, r, 30, c4);
+    }
+    else if (archetype === "moth"){
+      // moth wizard: wings + antenna + cloak
+      wing(ctx, -170, 10, c1, r);
+      wing(ctx,  170, 10, c1, r);
+      blob(ctx, 0, 40, bodyW*0.45, bodyH*0.65, r, "rgba(0,0,0,0.55)");
+      // antenna
+      ctx.strokeStyle = hexToRgba(c3,0.85);
+      ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.moveTo(-30,-40); ctx.quadraticCurveTo(-80,-110,-110,-130); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo( 30,-40); ctx.quadraticCurveTo( 80,-110, 110,-130); ctx.stroke();
+      eyes(ctx, r, 10, "#ffffff");
+    }
+    else if (archetype === "oracle"){
+      // floating orb + runes
+      ctx.fillStyle = hexToRgba(c1,0.30);
+      ctx.beginPath(); ctx.arc(0, 10, 170, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = hexToRgba(c3,0.90);
+      ctx.beginPath(); ctx.arc(0, 0, 120, 0, Math.PI*2); ctx.fill();
+      // runes
+      ctx.strokeStyle = "rgba(0,0,0,0.25)";
+      ctx.lineWidth = 7;
+      for (let i=0;i<7;i++){
+        ctx.beginPath();
+        ctx.arc(0,0, 35+i*12, r()*Math.PI*2, r()*Math.PI*2);
+        ctx.stroke();
+      }
+      eyes(ctx, r, 0, c4);
+    }
+    else if (archetype === "neonCrab"){
+      // crab body + claws
+      blob(ctx, 0, 40, bodyW*0.8, bodyH*0.45, r, hexToRgba(c3,0.92));
+      claw(ctx, -190, 20, c1, r);
+      claw(ctx,  190, 20, c1, r);
+      // legs
+      ctx.strokeStyle = "rgba(0,0,0,0.25)";
+      ctx.lineWidth = 8;
+      for (let i=-3;i<=3;i++){
+        ctx.beginPath();
+        ctx.moveTo(i*35, 90);
+        ctx.lineTo(i*55, 135);
+        ctx.stroke();
+      }
+      eyes(ctx, r, 20, "#ffffff");
+    }
+    else {
+      // default golem-ish
+      blob(ctx, 0, 30, bodyW, bodyH, r, "rgba(0,0,0,0.78)");
+      eyes(ctx, r, -20, c4);
+    }
+
+    ctx.restore();
+
+    // border
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.lineWidth = 2;
+    roundRect(ctx, x, y, w, h, 26);
+    ctx.stroke();
+  }
+
+  function blob(ctx, cx, cy, w, h, r, fill){
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.fillStyle = fill;
     ctx.beginPath();
-    const spikes = 10 + Math.floor(r()*10);
-    const radius = 120 + Math.floor(r()*80);
-    for (let i=0;i<=spikes;i++){
-      const ang = (i/spikes) * Math.PI * 2;
-      const wobble = radius * (0.60 + r()*0.55);
-      const px = Math.cos(ang) * wobble;
-      const py = Math.sin(ang) * wobble * (0.85 + r()*0.4);
+    const n = 14 + Math.floor(r()*10);
+    for (let i=0;i<=n;i++){
+      const ang = (i/n) * Math.PI * 2;
+      const rx = (w/2) * (0.70 + r()*0.45);
+      const ry = (h/2) * (0.70 + r()*0.45);
+      const px = Math.cos(ang) * rx;
+      const py = Math.sin(ang) * ry;
       if (i===0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
     }
     ctx.closePath();
     ctx.fill();
-
-    ctx.fillStyle = "rgba(255,255,255,0.9)";
-    const eyeY = -40 + r()*40;
-    ctx.beginPath(); ctx.arc(-50 + r()*30, eyeY, 10 + r()*8, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc( 50 - r()*30, eyeY, 10 + r()*8, 0, Math.PI*2); ctx.fill();
     ctx.restore();
+  }
 
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
-    ctx.lineWidth = 2;
-    roundRect(ctx, x, y, w, h, 26);
+  function eyes(ctx, r, y, color){
+    ctx.fillStyle = hexToRgba(color, 0.92);
+    const ex = 55 + r()*25;
+    const ey = y + (-10 + r()*20);
+    const er = 10 + r()*10;
+    ctx.beginPath(); ctx.arc(-ex, ey, er, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( ex, ey, er, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.beginPath(); ctx.arc(-ex, ey, er*0.45, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( ex, ey, er*0.45, 0, Math.PI*2); ctx.fill();
+  }
+
+  function wing(ctx, x, y, color, r){
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = hexToRgba(color, 0.35);
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.quadraticCurveTo(-120, -60, -160, 30);
+    ctx.quadraticCurveTo(-70, 120, 10, 70);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function trapezoid(ctx, x, y, topW, bottomW, h){
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.beginPath();
+    ctx.moveTo(-topW/2, -h/2);
+    ctx.lineTo(topW/2, -h/2);
+    ctx.lineTo(bottomW/2, h/2);
+    ctx.lineTo(-bottomW/2, h/2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.25)";
+    ctx.lineWidth = 6;
     ctx.stroke();
+    ctx.restore();
+  }
+
+  function bolt(ctx, x, y, color, r){
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.strokeStyle = hexToRgba(color, 0.9);
+    ctx.lineWidth = 7;
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(-25, 35);
+    ctx.lineTo(10, 35);
+    ctx.lineTo(-20, 75);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function claw(ctx, x, y, color, r){
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = hexToRgba(color, 0.85);
+    ctx.beginPath();
+    ctx.arc(0, 0, 55, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.beginPath();
+    ctx.arc(18, -10, 22, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
   }
 
   function addFoil(ctx, x, y, w, h, glow, tier){
@@ -516,7 +918,8 @@
   }
 
   function hexToRgba(hex, a){
-    const h = hex.replace("#","");
+    const h = String(hex).replace("#","");
+    if (h.length !== 6) return `rgba(255,255,255,${a})`;
     const r = parseInt(h.slice(0,2),16);
     const g = parseInt(h.slice(2,4),16);
     const b = parseInt(h.slice(4,6),16);
@@ -580,10 +983,17 @@
     }
   }
 
+  function setPackUI(label, glow="#7c3aed"){
+    $("packImg").src = packDataURL(label, glow);
+    $("stagePill").textContent = "SEALED PACK";
+    $("stageHint").textContent = "Tap Rip Pack";
+  }
+
   function bind(){
     updateStatus();
+    setPackUI("READY TO RIP", "#7c3aed");
 
-    $("rip").addEventListener("click", () => {
+    $("rip").addEventListener("click", async () => {
       const text = $("input").value.trim();
       const habitat = $("location").value.trim();
       if (!text) return alert("Paste some notes first.");
@@ -592,17 +1002,36 @@
       updateStatus();
       if (!ok) return alert("Out of rips for today. Come back tomorrow (or use +3 demo).");
 
+      // prep pack
+      const stage = $("stage");
+      stage.classList.remove("ripping");
+      $("cardImg").style.display = "none";
+      setPackUI("OPENING…", "#a78bfa");
+
+      // generate card
       const nonce = bumpRipNonce();
       const card = generateCard(text + "\n#nonce:" + nonce, habitat);
       lastCard = card;
 
+      // draw PNG + update text
       drawCardPNG(card);
       renderCardText(card);
 
-      // ✅ show PNG preview
-      const img = $("cardImg");
-      img.src = $("cardCanvas").toDataURL("image/png");
-      img.style.display = "block";
+      // update stage labels (slight tease, NOT the actual rule)
+      $("stagePill").textContent = card.rarity.toUpperCase();
+      $("stageHint").textContent = "Card popped out.";
+      $("packImg").src = packDataURL("RIPPED!", card.glow);
+
+      // set card image then animate reveal
+      $("cardImg").src = $("cardCanvas").toDataURL("image/png");
+      stage.classList.add("ripping");
+
+      // reset pack after a moment (so you can rip again and see a pack)
+      setTimeout(() => {
+        stage.classList.remove("ripping");
+        $("cardImg").style.display = "block";
+        setPackUI("READY TO RIP", "#7c3aed");
+      }, 900);
     });
 
     $("share").addEventListener("click", async () => {
@@ -640,7 +1069,8 @@
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
   else bind();
+
 })();
-  </script>
+</script>
 </body>
 </html>
