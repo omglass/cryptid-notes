@@ -6,228 +6,31 @@
   <title>Meeting Into Cryptid</title>
   <meta name="theme-color" content="#0b0b0b"/>
   <style>
-    body{margin:0;font-family:system-ui,-apple-system;background:#0b0b0b;color:#fff}
-    .wrap{padding:16px;max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
-    textarea{width:100%;min-height:170px;background:#141414;color:#fff;border:1px solid #2a2a2a;border-radius:14px;padding:12px;outline:none}
-    input{width:100%;background:#141414;color:#fff;border:1px solid #2a2a2a;border-radius:14px;padding:12px;outline:none}
-    button{background:#7c3aed;color:#fff;border:0;border-radius:14px;padding:12px 14px;font-weight:900}
-    button:disabled{background:#2a2a2a}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .row button{flex:1;min-width:120px}
-    .hint{color:#9ca3af;font-size:12px;line-height:1.35}
-    .card{
-      background: radial-gradient(1200px 500px at 10% 0%, rgba(124,58,237,.35), transparent),
-                  radial-gradient(900px 500px at 100% 40%, rgba(16,185,129,.22), transparent),
-                  #0f0f10;
-      border:1px solid #2a2a2a;
-      border-radius:18px;
-      padding:14px;
-      white-space:pre-wrap;
-      line-height:1.35;
-    }
-    .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#1f1f22;border:1px solid #2a2a2a;font-size:12px;color:#d1d5db}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-    .small{font-size:12px;color:#cbd5e1}
-    .saved{background:#101012;border:1px solid #2a2a2a;border-radius:14px;padding:12px;white-space:pre-wrap}
-    .ok{color:#34d399}
-    .bad{color:#fca5a5}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div style="font-weight:1000;font-size:18px">Meeting Into Cryptid</div>
-    <div class="hint">Paste notes → Summon Cryptid → Share. (No AI, pure chaos.)</div>
+    FIELD GUIDE • UNVERIFIED SIGHTING
 
-    <textarea id="input" placeholder="Paste notes / class chaos / meeting sludge here…"></textarea>
-    <input id="location" placeholder="Optional habitat (e.g., My job / Group chat / Biology lab)"/>
+Quarterly Chimera
 
-    <div class="row">
-      <button id="make" type="button">Summon Cryptid</button>
-      <button id="worse" type="button">Make It Worse</button>
-      <button id="copy" type="button">Copy Text</button>
-      <button id="share" type="button">Share Card</button>
-    </div>
+Habitat: Spreadsheet canyon
 
-    <div id="status" class="hint"></div>
-    <div id="card" class="card"></div>
+Threat level: Elevated (derailing)
 
-    <div class="row">
-      <button id="save" type="button">Save</button>
-      <button id="show" type="button">Show Saved</button>
-      <button id="clear" type="button">Clear Saved</button>
-    </div>
-    <div id="saved" class="saved">No saved sightings yet.</div>
 
-    <div class="hint">After publish: open link in Safari/Chrome → “Add to Home Screen”.</div>
-  </div>
+Attracted to: pizza, meeting, head, lick, torch.
 
-<script>
-(function(){
-  const $ = (id) => document.getElementById(id);
 
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, (m) => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    }[m]));
-  }
+Observed behaviors
+• Migrates toward unmuted microphones.
+• Becomes visible only when someone says “quick question.”
 
-  const speciesA = ["Budget","Calendar","Feedback","Scope","Roadmap","Sync","Stakeholder","Deadline","Pipeline","Alignment","Compliance","Velocity","Deliverable","Metrics","Hiring","Policy","Retro","Standup","Incident","Quarterly","OKR"];
-  const speciesB = ["Wraith","Moth","Golem","Hydra","Gremlin","Banshee","Specter","Slime","Worm","Chimera","Cryptid","Warden","Husk","Poltergeist","Sprite","Beast","Mirror","Fang","Oracle","Parasite","Orb"];
-  const habitats = ["Open-plan tundra","Zoom marshlands","Email catacombs","Slack swamp","Calendar labyrinth","Spreadsheet canyon","Conference-room terrarium","Group-chat sinkhole","Dorm hallway","Kitchen at 2am","Library dusk zone"];
-  const traits = [
-    "Feeds on vague verbs and unowned tasks.",
-    "Becomes visible only when someone says “quick question.”",
-    "Sheds context every 3 minutes.",
-    "Multiplies when you add more stakeholders.",
-    "Hates clear deadlines; thrives on ‘sometime next week.’",
-    "Migrates toward unmuted microphones.",
-    "Carries a cursed link nobody can open.",
-    "Steals meaning from bullet points.",
-    "Leaves behind a sticky note smell of panic."
-  ];
-  const threat = ["Low (annoying)","Guarded (distracting)","Elevated (derailing)","High (schedule-eating)","Severe (soul-tax)","Mythic (career-event)"];
-  const survival = [
-    "Ask: who owns this? (Say it slowly.)",
-    "Turn nouns into verbs. Then assign a name.",
-    "Write one deadline with a date, not a vibe.",
-    "Delete 50% of the meeting; keep the decision.",
-    "If it’s unclear, reduce it to one sentence.",
-    "If it’s urgent, create a checklist. If not, stop touching it.",
-    "Translate ‘alignment’ into an actual choice.",
-    "Screenshot the decision. Email it to the future."
-  ];
 
-  function pick(arr, seed){
-    const x = Math.abs(Math.sin(seed) * 100000) % arr.length;
-    return arr[Math.floor(x)];
-  }
-  function hashStr(s){
-    let h = 2166136261;
-    for (let i=0;i<s.length;i++){
-      h ^= s.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    return h >>> 0;
-  }
-  function keywords(text){
-    const words = text.toLowerCase()
-      .replace(/[^a-z0-9\s]/g," ")
-      .split(/\s+/)
-      .filter(w => w.length >= 4 && !["this","that","with","from","have","will","they","them","then","just","like","okay","going","into","about","more","some","very","what","when","where","your","youre","were","also"].includes(w));
-    const freq = new Map();
-    for (const w of words) freq.set(w, (freq.get(w)||0)+1);
-    return [...freq.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5).map(([w])=>w);
-  }
+Evidence fragment
+“Pizza pie meeting head dog lick torch bow”
 
-  function makeCard(worseMode){
-    const text = $("input").value.trim();
-    const habUser = $("location").value.trim();
-    if (!text){
-      $("card").textContent = "Paste something first. The cryptid needs context crumbs.";
-      return;
-    }
-    const seedBase = hashStr(text + "|" + habUser);
-    const seed = seedBase + (worseMode ? Math.floor(Math.random()*9999) : 0);
 
-    const name = pick(speciesA, seed) + " " + pick(speciesB, seed+1);
-    const habitat = habUser || pick(habitats, seed+2);
-    const k = keywords(text);
-    const tagLine = k.length ? ("Attracted to: " + k.join(", ") + ".") : "Attracted to: unnamed vibes.";
+How to survive
+• Delete 50% of the meeting; keep the decision.
+• Delete 50% of the meeting; keep the decision.
+• Ask: who owns this? (Say it slowly.)
 
-    const t1 = pick(traits, seed+3);
-    const t2 = pick(traits, seed+4);
-    const lvl = pick(threat, seed+5);
 
-    const s1 = pick(survival, seed+6);
-    const s2 = pick(survival, seed+7);
-    const s3 = pick(survival, seed+8);
-
-    const excerpt = text.split("\n").map(l=>l.trim()).filter(Boolean).slice(0,4).join(" / ").slice(0,140);
-
-    $("card").innerHTML =
-      '<div class="pill mono">FIELD GUIDE • UNVERIFIED SIGHTING</div>' +
-      '<div style="margin-top:10px;font-weight:1000;font-size:20px">' + escapeHtml(name) + '</div>' +
-      '<div class="small">Habitat: <span class="mono">' + escapeHtml(habitat) + '</span></div>' +
-      '<div class="small">Threat level: <span class="mono">' + escapeHtml(lvl) + '</span></div>' +
-      '<div style="margin-top:10px" class="small mono">' + escapeHtml(tagLine) + '</div>' +
-      '<div style="margin-top:10px"><b>Observed behaviors</b>' +
-      '<div class="mono small">• ' + escapeHtml(t1) + '<br>• ' + escapeHtml(t2) + '</div></div>' +
-      '<div style="margin-top:10px"><b>Evidence fragment</b>' +
-      '<div class="mono small">“' + escapeHtml(excerpt || "—") + '”</div></div>' +
-      '<div style="margin-top:10px"><b>How to survive</b>' +
-      '<div class="mono small">• ' + escapeHtml(s1) + '<br>• ' + escapeHtml(s2) + '<br>• ' + escapeHtml(s3) + '</div></div>' +
-      '<div style="margin-top:10px" class="small">Generated locally. Share responsibly.</div>';
-  }
-
-  async function shareCard(){
-    // Minimal reliable share: share TEXT first; image is a nice-to-have.
-    const text = $("card").innerText.trim();
-    if (!text) makeCard(false);
-
-    const finalText = $("card").innerText.trim();
-    if (navigator.share) {
-      try { await navigator.share({ text: finalText, title: "Meeting Into Cryptid" }); return; }
-      catch(e) { /* fall through */ }
-    }
-    // Fallback
-    try { await navigator.clipboard.writeText(finalText); alert("Copied (share not available)."); }
-    catch { alert("Share unavailable. Use Copy Text."); }
-  }
-
-  function loadItems(){
-    try { return JSON.parse(localStorage.getItem("cryptids") || "[]"); }
-    catch { return []; }
-  }
-  function saveItems(items){
-    localStorage.setItem("cryptids", JSON.stringify(items));
-  }
-
-  function bind(){
-    $("status").innerHTML = '<span class="ok">JS loaded.</span> Tap “Summon Cryptid”.';
-    $("card").textContent = "Summon a cryptid by pasting notes and tapping “Summon Cryptid”.";
-    $("make").addEventListener("click", () => makeCard(false));
-    $("worse").addEventListener("click", () => makeCard(true));
-    $("copy").addEventListener("click", async () => {
-      const t = $("card").innerText || "";
-      try { await navigator.clipboard.writeText(t); alert("Copied."); }
-      catch { alert("Copy failed (permission)."); }
-    });
-    $("share").addEventListener("click", shareCard);
-
-    $("save").addEventListener("click", () => {
-      const text = $("input").value.trim();
-      if(!text) return alert("Paste notes first.");
-      if(!$("card").innerText.trim()) makeCard(false);
-      const items = loadItems();
-      items.unshift({ t: Date.now(), habitat: $("location").value.trim(), card: $("card").innerText });
-      saveItems(items.slice(0,50));
-      alert("Saved (on this phone).");
-    });
-
-    $("show").addEventListener("click", () => {
-      const items = loadItems();
-      $("saved").textContent = items.length
-        ? items.map(i => {
-            const when = new Date(i.t).toLocaleString();
-            const hab = i.habitat ? (" (" + i.habitat + ")") : "";
-            return "• " + when + hab + "\n" + i.card + "\n";
-          }).join("\n")
-        : "No saved sightings yet.";
-    });
-
-    $("clear").addEventListener("click", () => {
-      localStorage.removeItem("cryptids");
-      $("saved").textContent = "No saved sightings yet.";
-      alert("Cleared.");
-    });
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bind);
-  } else {
-    bind();
-  }
-})();
-</script>
-</body>
-</html>
+Generated locally. Share responsibly.
